@@ -10,7 +10,7 @@ cred = credentials.Certificate("t-wenty-clothes-firebase-key.json")
 firebase_admin.initialize_app(cred)
 db = firestore.client()
 
-# 네이버 쇼핑 API 정보 
+# 네이버 쇼핑 API 정보
 client_id = "kwZ2a5ZkIp1jEZ72Z6JF"
 client_secret = "Uo947wMLb_"
 
@@ -22,7 +22,7 @@ style_keywords = {
         "season": "사계절"
     },
     "러블리": {
-        "keywords": ["원피스", "가디건", "블라우스 #리본,쉬폰,하늘하늘,파스텔톤"],
+        "keywords": ["원피스","스커트", "가디건", "블라우스 #리본,쉬폰,하늘하늘,파스텔톤"],
         "gender": "여성",
         "season": "봄, 여름, 가을"
     },
@@ -47,6 +47,9 @@ style_keywords = {
         "season": "봄, 가을"
     }
 }
+
+# 여성으로 강제 지정할 키워드 리스트
+female_only_keywords = ["원피스", "블라우스 #리본,쉬폰,하늘하늘", "탑", "스커트"]
 
 total_count = 200
 display = 100
@@ -86,16 +89,26 @@ for style, info in style_keywords.items():
                     link = item['link']
                     image = item['image']
 
+                    # 기본 성별
+                    current_gender = gender
+
+                    # 특정 키워드면 여성으로 강제 지정
+                    for female_kw in female_only_keywords:
+                        if female_kw in query:
+                            current_gender = "여성"
+                            break
+
                     print(f"상품명: {title}")
                     print(f"링크: {link}")
                     print(f"이미지: {image}")
+                    print(f"성별: {current_gender}")
                     print("-" * 50)
 
-                    # Firestore에 추가 정보까지 함께 저장
+                    # Firestore에 저장
                     doc_ref = db.collection("shop_data").document()
                     doc_ref.set({
                         "style": style,
-                        "gender": gender,
+                        "gender": current_gender,
                         "season": season,
                         "keyword": query,
                         "title": title,
