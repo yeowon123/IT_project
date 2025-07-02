@@ -7,7 +7,7 @@ client_id = "kwZ2a5ZkIp1jEZ72Z6JF"
 client_secret = "Uo947wMLb_"
 
 # 검색 키워드 리스트
-keywords = ["반팔", "청바지", "운동화", "모자", "백팩"]
+keywords = ["셔츠", "니트조끼", "슬랙스", "가디건 #단정함"]
 
 total_count = 200  # 각 키워드당 수집 개수
 display = 100      # 한 번에 최대 100개
