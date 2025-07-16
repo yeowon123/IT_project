@@ -1,0 +1,13 @@
+{
+  "type": "service_account",
+  "project_id": "t-wenty-clothes",
+  "private_key_id": "49bbeac73540aaf5a070561bdc0025c7b38aa882",
+  "private_key": "-----BEGIN PRIVATE KEY-----\nMIIEvgIBADANBgkqhkiG9w0BAQEFAASCBKgwggSkAgEAAoIBAQDFtRVfDCZBkU6B\npsCI8c/1vC9F3T188f//qQmzJCgMe+FYRzwoWNTcmGTO1tOTxXq3BM0bPsR5ARdV\n4z+eCHn+2JkQa1wTSN9fdD6dwR1mitItRkUZY0ibdiKoS0q+qQmj0fSGcoGLdi6N\nQ3uvJJMXsIYc8xOJIoyzzeSKv4R2yl8vrcA3hXZbiiffXGhJE1ddWyOEnWMD3HQE\na9CS/e9fjQHwrywJkYRV0uWu0u5HT2BB5sGr/pLUNerxS42zo3VYHrN1OYSwisJn\neL48ywsT0Yjx5TLrH4GxkJa2KJQIV2xGH/j7X3O6BmBTyDIN79cYvYq3P+taInSV\nUq0NrSlhAgMBAAECggEAEbLip0P4S0OZrHHb98507FXUwgt6mQw1e4K7iW/NzYNM\nAqn63M5J/PcABEO3RFnoAMkTXvJlJoN2XjQWIny2Bh5IApAn2ZqbE4mdnuP2MLMx\n+kdZgXqxuegPFXOLDQsnH6UYn64RwoU5iOAfCwhqShM9iEsq5yqCf8ipYlHfhv4x\nrKwIgNJDWy6vfNVIWKoDjoTM1mxaWnNbTDiQ5IcfZo5UKxDJXBfjlaeU2iqluAHg\n5AKVXb1vdf2T0RTpn3/GnY5iA92sQiKRK/b6NZkdBht3TPbFFU5dP0IYZctyvQEB\nW4+atgsfB20+o7GkTcfkcFm6ld8lzKhaYwAnHGX/aQKBgQD1lt3tpDovZZnDen/s\nqEAvcVEZCPKU58QEUm9KWk3Klaa2/Ynh++wWRMti3KorzId6BB9EvVPbnd2p1hUs\ng8TwHQ/rke8dTeBA+ZCXxAtglqo97D3wtVh8dpqU68xsTAdGT40M8R9/8/X6RyJ4\nt57q3o3Eaxys1RAMuoM9mP2HaQKBgQDOFpoW7LvaS8iDcHkCcLfUtudaIlajSm6S\nTiDuvppGXmf3NVHgW9Fqv5VKiDhU1yP+v0RFyoH5S4RRSbH/wRnoahzNA9bnDCVU\nZC+mNC8vj1rn+V9eQ5F9NbW4fSCsj+M96Qx811c71DvCAcq1xJgzmQky4js0AydL\nPfwsLJSLOQKBgQCz9lG6ClX41WLPs7x6FvCx0z+yMLRSGWOyJxYWTgYjJXZ9MV0Q\nlCJ0TwUa9MheQAomh07CeFoy3IPKKG5rqENwEFvSK6YkuyRReI9UJvyPUth9d9gL\nw1eMHP05k3DBCxVpmHGrwiVrBcKCHA5Ol3+EbIFGJZdlrtuL+ECjqrBdwQKBgEpN\n0d7EGfLZ8gCZ87dShqU2EPHpgY08T+OGMc+Cf0Mx1JBH9C5NTJMNYjlOJelI7Fxz\n/5yeKACHHrzkMj5BFCM85wdwA/Kn6Wmk+Z0WIZEnQaJzwdPNzs3zKILM8pPlCQyQ\nUwVL6tLScX1AgiLJMAsieTOUZ74YCPnS7nHK3P/ZAoGBAMTZTg8nqojQ7jjE7jju\n4NjVzGDIfy9y9r+kNdnS7TiF9OFYA5Cuy60c+VX5vcc2/sMgE7F5Hsl+p5k68RLC\nhaP8ghgUUjCy4QrZAkeodGvEy8/ci8EDnqaqBEZ8+/KS28o9Q8zCpxDzJ9WTIGsU\nwqP2kEdEL4K+dh3OHH8PG3Sz\n-----END PRIVATE KEY-----\n",
+  "client_email": "firebase-adminsdk-fbsvc@t-wenty-clothes.iam.gserviceaccount.com",
+  "client_id": "100934175365152652396",
+  "auth_uri": "https://accounts.google.com/o/oauth2/auth",
+  "token_uri": "https://oauth2.googleapis.com/token",
+  "auth_provider_x509_cert_url": "https://www.googleapis.com/oauth2/v1/certs",
+  "client_x509_cert_url": "https://www.googleapis.com/robot/v1/metadata/x509/firebase-adminsdk-fbsvc%40t-wenty-clothes.iam.gserviceaccount.com",
+  "universe_domain": "googleapis.com"
+}
