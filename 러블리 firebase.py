@@ -25,7 +25,11 @@ force_female_tags = ["리본", "쉬폰", "하늘하늘"]
 keyword_meta = {
     "원피스":   {"category": "setup",  "style": "lovely", "season": ["봄", "여름", "가을", "겨울"]},
     "가디건":   {"category": "tops",   "style": "lovely", "season": ["봄", "여름", "가을", "겨울"]},
-    "블라우스": {"category": "tops",   "style": "lovely", "season": ["봄", "여름", "가을", "겨울"]}
+    "블라우스": {"category": "tops",   "style": "lovely", "season": ["봄", "여름", "가을", "겨울"]},
+    "치마": {"category": "bottoms",   "style": "lovely", "season": ["봄", "여름", "가을", "겨울"]},
+    "청바지": {"category": "bottoms",   "style": "lovely", "season": ["봄", "여름", "가을", "겨울"]},
+
+
 }
 
 # === 수집 설정
