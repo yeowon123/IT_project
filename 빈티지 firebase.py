@@ -6,7 +6,7 @@ import firebase_admin
 from firebase_admin import credentials, firestore
 
 # === Firebase 초기화 ===
-cred = credentials.Certificate("firebase/serviceAccountKey.json")  # 경로 조정 필요
+cred = credentials.Certificate("x")  # 경로 조정 필요
 firebase_admin.initialize_app(cred)
 db = firestore.client()
 
