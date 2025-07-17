@@ -28,7 +28,7 @@ keyword_meta = {
     "블라우스": {"category": "tops",   "style": "lovely", "season": ["봄", "여름", "가을", "겨울"]},
     "치마": {"category": "bottoms",   "style": "lovely", "season": ["봄", "여름", "가을", "겨울"]},
     "청바지": {"category": "bottoms",   "style": "lovely", "season": ["봄", "여름", "가을", "겨울"]},
-
+    "스커트": {"category": "bottoms",   "style": "lovely", "season": ["봄", "여름", "가을", "겨울"]},
 
 }
 
