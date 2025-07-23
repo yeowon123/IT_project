@@ -6,7 +6,7 @@ import firebase_admin
 from firebase_admin import credentials, firestore
 
 # === Firebase 초기화 ===
-cred = credentials.Certificate("xxx")  # ← 너의 Firebase 인증 파일 경로로 수정해야 함
+cred = credentials.Certificate("xxxxxx")
 firebase_admin.initialize_app(cred)
 db = firestore.client()
 
