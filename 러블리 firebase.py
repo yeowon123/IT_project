@@ -6,7 +6,7 @@ import firebase_admin
 from firebase_admin import credentials, firestore
 
 # === Firebase 초기화 ===
-cred = credentials.Certificate("xxx")  # 🔸 Firebase 인증 경로로 교체해야 함
+cred = credentials.Certificate("xxx") 
 firebase_admin.initialize_app(cred)
 db = firestore.client()
 
@@ -76,16 +76,12 @@ for keyword, meta in keyword_meta.items():
                 title = item['title']
                 lower_title = title.lower()
 
-                # === 키워드 필터링: 정확히 키워드 포함 안 되면 패스
-                if keyword.lower() not in lower_title:
-                    continue
-
                 # === 레깅스 필터링
                 if "레깅스" in title:
                     continue  # 레깅스는 업로드하지 않음
 
                 # === 성별 판정 로직
-                if keyword in ["원피스", "블라우스"] or any(tag in lower_title for tag in force_female_tags):
+                if keyword in ["원피스", "블라우스","치마","스커트"] or any(tag in lower_title for tag in force_female_tags):
                     detected_gender = "여성"
                 else:
                     detected_gender = detect_gender_from_title(title)
