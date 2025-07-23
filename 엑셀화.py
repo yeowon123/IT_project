@@ -4,7 +4,6 @@ import pandas as pd
 
 # Firebase 초기화
 cred = credentials.Certificate("xxxxx")
-firebase_admin.initialize_app(cred)
 db = firestore.client()
 
 # 스타일과 카테고리 목록
