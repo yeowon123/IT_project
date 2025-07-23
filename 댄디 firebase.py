@@ -6,7 +6,7 @@ import firebase_admin
 from firebase_admin import credentials, firestore
 
 # === Firebase 초기화 ===
-cred = credentials.Certificate("xxx")  # 인증 JSON 경로로 교체해야 함
+cred = credentials.Certificate("xxx") 
 firebase_admin.initialize_app(cred)
 db = firestore.client()
 
@@ -28,10 +28,9 @@ display = 100
 delay_sec = 0.5
 
 # === 성별 키워드
-female_words = ["여성", "여자", "레이디", "girl", "woman", "우먼", "캡", "브라탑", "나시", "언더붑", "탑"]
-male_words = ["남성", "남자", "man", "boy", "맨"]
+female_words = ["여성", "여자", "레이디", "girl", "woman","우먼","캡","브라탑","나시","언더붑","탑"]
+male_words = ["남성", "남자", "man", "boy","맨"]
 
-# === 본격 실행 ===
 for keyword, meta in keyword_meta.items():
     print(f"\n========== [{keyword}] 검색 결과 ==========\n")
     encText = urllib.parse.quote(keyword)
@@ -56,11 +55,6 @@ for keyword, meta in keyword_meta.items():
 
             for item in items:
                 title = item['title']
-                lower_title = title.lower()
-
-                # === 키워드 필터링: 정확히 키워드 포함 안 되면 패스
-                if keyword.lower() not in lower_title:
-                    continue
 
                 # 🔍 성별 자동 판정
                 has_female = any(word in title for word in female_words)
