@@ -6,7 +6,7 @@ import firebase_admin
 from firebase_admin import credentials, firestore
 
 # === Firebase 초기화 ===
-cred = credentials.Certificate("xxx") 
+cred = credentials.Certificate("xxx")  # ← 너의 Firebase 인증 파일 경로로 수정해야 함
 firebase_admin.initialize_app(cred)
 db = firestore.client()
 
@@ -19,14 +19,14 @@ style_keyword_map = {
     "vintage": ["복고", "레트로"]
 }
 
-# === 키워드별 정보 (카테고리, 성별, 시즌 등 포함) ===
+# === 키워드별 정보 (카테고리, 성별, 시즌 등 포함)
 keyword_meta = {
     "체크셔츠": {"category": "tops", "style": "vintage", "season": ["봄", "여름", "가을", "겨울"]},
     "와이드데님": {"category": "bottoms", "style": "vintage", "season": ["봄", "여름", "가을", "겨울"]},
     "자켓": {"category": "tops", "style": "vintage", "season": ["가을", "겨울"]},
 }
 
-# === 수집 설정 ===
+# === 수집 설정
 total_count = 200
 display = 100
 delay_sec = 0.5
@@ -43,6 +43,7 @@ def detect_style_from_title(title, default_style="street"):
 female_words = ["여성", "여자", "레이디", "girl", "woman", "우먼", "캡", "브라탑", "나시", "언더붑", "탑"]
 male_words = ["남성", "남자", "man", "boy", "맨"]
 
+# === 수집 루프
 for keyword, meta in keyword_meta.items():
     print(f"\n========== [{keyword}] 검색 결과 ==========\n")
     encText = urllib.parse.quote(keyword)
@@ -67,6 +68,11 @@ for keyword, meta in keyword_meta.items():
 
             for item in items:
                 title = item['title']
+                lower_title = title.lower()
+
+                # === 키워드 필터링: 정확히 키워드 포함 안 되면 패스
+                if keyword.lower() not in lower_title:
+                    continue
 
                 # 🔍 스타일 자동 감지
                 detected_style = detect_style_from_title(title, default_style=meta["style"])

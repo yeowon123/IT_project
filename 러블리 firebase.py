@@ -6,7 +6,7 @@ import firebase_admin
 from firebase_admin import credentials, firestore
 
 # === Firebase 초기화 ===
-cred = credentials.Certificate("xxx") 
+cred = credentials.Certificate("xxx")  # 🔸 Firebase 인증 경로로 교체해야 함
 firebase_admin.initialize_app(cred)
 db = firestore.client()
 
@@ -75,6 +75,10 @@ for keyword, meta in keyword_meta.items():
             for item in items:
                 title = item['title']
                 lower_title = title.lower()
+
+                # === 키워드 필터링: 정확히 키워드 포함 안 되면 패스
+                if keyword.lower() not in lower_title:
+                    continue
 
                 # === 레깅스 필터링
                 if "레깅스" in title:

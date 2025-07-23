@@ -6,7 +6,7 @@ import firebase_admin
 from firebase_admin import credentials, firestore
 
 # === Firebase 초기화 ===
-cred = credentials.Certificate("xxx") 
+cred = credentials.Certificate("xxx")  # ← Firebase 인증 경로로 수정
 firebase_admin.initialize_app(cred)
 db = firestore.client()
 
@@ -15,26 +15,23 @@ client_id = "kwZ2a5ZkIp1jEZ72Z6JF"
 client_secret = "Uo947wMLb_"
 
 # === 성별 단어 리스트
-female_words = ["여성", "여자", "레이디", "girl", "woman","우먼","캡","브라탑","나시","언더붑","탑"]
-male_words = ["남성", "남자", "man", "boy","맨"]
+female_words = ["여성", "여자", "레이디", "girl", "woman", "우먼", "캡", "브라탑", "나시", "언더붑", "탑"]
+male_words = ["남성", "남자", "man", "boy", "맨"]
 
-
-# === 키워드별 메타데이터 (분류 가능한 키워드만 포함)
+# === 키워드별 메타데이터
 keyword_meta = {
-    "조거팬츠":     {"category": "bottoms",    "style": "sporty", "season": ["봄", "여름", "가을", "겨울"]},
-    "탑": {"category": "tops",    "style": "sporty", "season": ["봄", "여름", "가을"]},
+    "조거팬츠":  {"category": "bottoms", "style": "sporty", "season": ["봄", "여름", "가을", "겨울"]},
+    "탑":       {"category": "tops",    "style": "sporty", "season": ["봄", "여름", "가을"]},
     "레깅스":   {"category": "bottoms", "style": "sporty", "season": ["봄", "여름", "가을", "겨울"]},
-    "트레이닝":   {"category": "setup",    "style": "sporty", "season": ["봄", "여름", "가을", "겨울"]},
-    "후드":   {"category": "tops",    "style": "sporty", "season": ["봄", "여름", "가을", "겨울"]},
-    "바람막이":   {"category": "tops",    "style": "sporty", "season": ["봄", "여름", "가을", "겨울"]},
+    "트레이닝": {"category": "setup",   "style": "sporty", "season": ["봄", "여름", "가을", "겨울"]},
+    "후드":     {"category": "tops",    "style": "sporty", "season": ["봄", "여름", "가을", "겨울"]},
+    "바람막이": {"category": "tops",    "style": "sporty", "season": ["봄", "여름", "가을", "겨울"]},
 }
 
 # === 수집 설정
 total_count = 200
 display = 100
 delay_sec = 0.5
-
-
 
 # === 성별 자동 감지 함수
 def detect_gender_from_title(title):
@@ -48,7 +45,6 @@ def detect_gender_from_title(title):
         return "남성"
     else:
         return "남녀공용"
-    
 
 # === 본격적인 수집 및 업로드
 for keyword, meta in keyword_meta.items():
@@ -75,9 +71,16 @@ for keyword, meta in keyword_meta.items():
 
             for item in items:
                 title = item['title']
-                detected_gender = detect_gender_from_title(title)
-                
+                lower_title = title.lower()
 
+                # === 키워드 필터링: 정확히 키워드 포함 안 되면 패스
+                if keyword.lower() not in lower_title:
+                    continue
+
+                # === 성별 자동 감지
+                detected_gender = detect_gender_from_title(title)
+
+                # === 저장할 문서 구성
                 doc = {
                     "title": item['title'],
                     "link": item['link'],
@@ -101,4 +104,4 @@ for keyword, meta in keyword_meta.items():
         start += display
         time.sleep(delay_sec)
 
-print("\n✅ 모든 키워드 수집 및 Firestore 업로드 완료!")
+print("\n✅ 스포티 스타일 모든 키워드 수집 및 Firebase 업로드 완료!")
