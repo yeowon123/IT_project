@@ -6,7 +6,7 @@ import firebase_admin
 from firebase_admin import credentials, firestore
 
 # === Firebase 초기화 ===
-cred = credentials.Certificate("xxx")
+cred = credentials.Certificate("xxx") 
 firebase_admin.initialize_app(cred)
 db = firestore.client()
 
@@ -21,11 +21,10 @@ style_keyword_map = {
 
 # === 키워드별 정보 (카테고리, 성별, 시즌 등 포함) ===
 keyword_meta = {
-    "체크셔츠":     {"category": "tops", "style": "vintage", "season": ["봄","여름","가을","겨울"]},
-    "와이드데님":     {"category": "bottoms","style": "vintage",  "season": ["봄","여름", "가을", "겨울"]},
-    "자켓":     {"category": "tops", "style": "vintage", "season": ["가을", "겨울"]},
+    "체크셔츠": {"category": "tops", "style": "vintage", "season": ["봄", "여름", "가을", "겨울"]},
+    "와이드데님": {"category": "bottoms", "style": "vintage", "season": ["봄", "여름", "가을", "겨울"]},
+    "자켓": {"category": "tops", "style": "vintage", "season": ["가을", "겨울"]},
 }
-
 
 # === 수집 설정 ===
 total_count = 200
@@ -41,8 +40,8 @@ def detect_style_from_title(title, default_style="street"):
     return default_style
 
 # === 성별 키워드
-female_words = ["여성", "여자", "레이디", "girl", "woman","우먼","캡","브라탑","나시","언더붑","탑"]
-male_words = ["남성", "남자", "man", "boy","맨"]
+female_words = ["여성", "여자", "레이디", "girl", "woman", "우먼", "캡", "브라탑", "나시", "언더붑", "탑"]
+male_words = ["남성", "남자", "man", "boy", "맨"]
 
 for keyword, meta in keyword_meta.items():
     print(f"\n========== [{keyword}] 검색 결과 ==========\n")
@@ -69,6 +68,9 @@ for keyword, meta in keyword_meta.items():
             for item in items:
                 title = item['title']
 
+                # 🔍 스타일 자동 감지
+                detected_style = detect_style_from_title(title, default_style=meta["style"])
+
                 # 🔍 성별 자동 판정
                 has_female = any(word in title for word in female_words)
                 has_male = any(word in title for word in male_words)
@@ -80,7 +82,6 @@ for keyword, meta in keyword_meta.items():
                 else:
                     detected_gender = "남녀공용"
 
-
                 doc = {
                     "title": item['title'],
                     "link": item['link'],
@@ -88,7 +89,7 @@ for keyword, meta in keyword_meta.items():
                     "price": int(item['lprice']),
                     "gender": detected_gender,
                     "season": meta["season"],
-                    "style":  detected_style,
+                    "style": detected_style,
                     "category": meta["category"]
                 }
 
@@ -105,4 +106,4 @@ for keyword, meta in keyword_meta.items():
         start += display
         time.sleep(delay_sec)
 
-print("\n✅ 스트릿 스타일 모든 키워드 수집 및 업로드 완료!")
+print("\n✅ 빈티지 스타일 모든 키워드 수집 및 업로드 완료!")
