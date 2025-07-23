@@ -6,17 +6,17 @@ import firebase_admin
 from firebase_admin import credentials, firestore
 
 # === Firebase 초기화 ===
-cred = credentials.Certificate("x")  # 파일 경로 확인
+cred = credentials.Certificate("xxx")
 firebase_admin.initialize_app(cred)
 db = firestore.client()
 
 # === 네이버 API 인증 ===
-client_id = "YOUR_NAVER_CLIENT_ID"
-client_secret = "YOUR_NAVER_CLIENT_SECRET"
+client_id = "kwZ2a5ZkIp1jEZ72Z6JF"
+client_secret = "Uo947wMLb_"
 
 # === 성별 단어 리스트
-female_words = ["여성", "여자", "레이디", "girl", "woman"]
-male_words = ["남성", "남자", "man", "boy"]
+female_words = ["여성", "여자", "레이디", "girl", "woman","우먼","캡","브라탑","나시","언더붑","탑"]
+male_words = ["남성", "남자", "man", "boy","맨"]
 
 
 # === 키워드별 메타데이터 (분류 가능한 키워드만 포함)

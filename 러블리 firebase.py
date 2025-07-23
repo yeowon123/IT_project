@@ -6,7 +6,7 @@ import firebase_admin
 from firebase_admin import credentials, firestore
 
 # === Firebase 초기화 ===
-cred = credentials.Certificate("x")  # 경로 확인
+cred = credentials.Certificate("xxx")
 firebase_admin.initialize_app(cred)
 db = firestore.client()
 
@@ -15,8 +15,8 @@ client_id = "kwZ2a5ZkIp1jEZ72Z6JF"
 client_secret = "Uo947wMLb_"
 
 # === 성별 단어 리스트
-female_words = ["여성", "여자", "레이디", "girl", "woman"]
-male_words = ["남성", "남자", "man", "boy"]
+female_words = ["여성", "여자", "레이디", "girl", "woman", "우먼", "캡", "브라탑", "나시", "언더붑", "탑"]
+male_words = ["남성", "남자", "man", "boy", "맨"]
 
 # === 스타일 키워드 (여성 강제 지정용)
 force_female_tags = ["리본", "쉬폰", "하늘하늘"]
@@ -26,10 +26,9 @@ keyword_meta = {
     "원피스":   {"category": "setup",  "style": "lovely", "season": ["봄", "여름", "가을", "겨울"]},
     "가디건":   {"category": "tops",   "style": "lovely", "season": ["봄", "여름", "가을", "겨울"]},
     "블라우스": {"category": "tops",   "style": "lovely", "season": ["봄", "여름", "가을", "겨울"]},
-    "치마": {"category": "bottoms",   "style": "lovely", "season": ["봄", "여름", "가을", "겨울"]},
-    "청바지": {"category": "bottoms",   "style": "lovely", "season": ["봄", "여름", "가을", "겨울"]},
-    "스커트": {"category": "bottoms",   "style": "lovely", "season": ["봄", "여름", "가을", "겨울"]},
-
+    "치마":     {"category": "bottoms", "style": "lovely", "season": ["봄", "여름", "가을", "겨울"]},
+    "청바지":   {"category": "bottoms", "style": "lovely", "season": ["봄", "여름", "가을", "겨울"]},
+    "스커트":   {"category": "bottoms", "style": "lovely", "season": ["봄", "여름", "가을", "겨울"]},
 }
 
 # === 수집 설정
@@ -76,6 +75,10 @@ for keyword, meta in keyword_meta.items():
             for item in items:
                 title = item['title']
                 lower_title = title.lower()
+
+                # === 레깅스 필터링
+                if "레깅스" in title:
+                    continue  # 레깅스는 업로드하지 않음
 
                 # === 성별 판정 로직
                 if keyword in ["원피스", "블라우스"] or any(tag in lower_title for tag in force_female_tags):

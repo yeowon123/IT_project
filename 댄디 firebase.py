@@ -6,7 +6,7 @@ import firebase_admin
 from firebase_admin import credentials, firestore
 
 # === Firebase 초기화 ===
-cred = credentials.Certificate("x")  # ← 경로 확인 필요
+cred = credentials.Certificate("xxx") 
 firebase_admin.initialize_app(cred)
 db = firestore.client()
 
@@ -28,8 +28,8 @@ display = 100
 delay_sec = 0.5
 
 # === 성별 키워드
-female_words = ["여성", "여자", "레이디", "girl", "woman"]
-male_words = ["남성", "남자", "man", "boy"]
+female_words = ["여성", "여자", "레이디", "girl", "woman","우먼","캡","브라탑","나시","언더붑","탑"]
+male_words = ["남성", "남자", "man", "boy","맨"]
 
 for keyword, meta in keyword_meta.items():
     print(f"\n========== [{keyword}] 검색 결과 ==========\n")
