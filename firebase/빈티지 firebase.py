@@ -24,6 +24,13 @@ keyword_meta = {
     "체크셔츠": {"category": "tops", "style": "vintage", "season": ["봄", "여름", "가을", "겨울"]},
     "와이드데님": {"category": "bottoms", "style": "vintage", "season": ["봄", "여름", "가을", "겨울"]},
     "자켓": {"category": "tops", "style": "vintage", "season": ["가을", "겨울"]},
+    "트랙팬츠": {"category": "bottoms", "style": "vintage", "season": ["봄", "가을", "겨울"]},
+    "컷팅 민소매": {"category": "tops", "style": "vintage", "season": ["여름", "봄"]},
+    "멜빵바지": {"category": "bottoms", "style": "vintage", "season": ["봄", "가을"]},
+    "카모반팔": {"category": "tops", "style": "vintage", "season": ["여름"]},
+    "하이웨스트" : {"category": "bottoms", "style": "vintage", "season": ["봄", "가을", "겨울"]},
+    "와이드 팬츠": {"category": "bottoms", "style": "vintage", "season": ["봄","여름", "가을", "겨울"]}
+
 }
 
 # === 수집 설정
