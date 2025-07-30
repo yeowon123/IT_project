@@ -4,7 +4,7 @@ import random
 
 
 # Firebase 인증 및 초기화
-cred = credentials.Certificate("C:\\Users\\kimyw\\.vscode\\IT_project\\t-wenty-clothes-firebase-adminsdk-fbsvc-0a09f15713.json")  # 경로 입력
+cred = credentials.Certificate("xxx")  # 경로 입력
 firebase_admin.initialize_app(cred)
 db = firestore.client()
 
