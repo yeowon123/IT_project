@@ -1,0 +1,116 @@
+from flask import Flask, request, jsonify
+import firebase_admin
+from firebase_admin import credentials, firestore
+import numpy as np
+from sklearn.metrics.pairwise import cosine_similarity
+import random
+
+app = Flask(__name__)
+
+# Firebase 초기화
+cred = credentials.Certificate("your-firebase-adminsdk.json")
+firebase_admin.initialize_app(cred)
+db = firestore.client()
+
+# 스타일 리스트 (원핫 인코딩용)
+style_list = ["casual", "sporty", "street", "vintage", "dandy", "lovely"]
+
+# ===== Helper functions =====
+def get_items(style, category):
+    """Firestore에서 옷 데이터 가져오기"""
+    path = f"clothes/{style}/{category}"
+    docs = db.collection(path).stream()
+    items = []
+    for doc in docs:
+        data = doc.to_dict()
+        data["id"] = doc.id
+        data["category"] = category
+        data["style"] = style
+        items.append(data)
+    return items
+
+def get_user_bookmarks(user_id):
+    """사용자 북마크 가져오기"""
+    docs = db.collection("users").document(user_id).collection("bookmarks").stream()
+    bookmarks = [{**doc.to_dict(), "id": doc.id} for doc in docs]
+    return bookmarks
+
+def vectorize_style(item):
+    """스타일 원핫 벡터화"""
+    return np.array([1 if item.get("style") == s else 0 for s in style_list])
+
+# ===== 북마크 토글 API =====
+@app.route("/bookmarks/", methods=["POST"])
+def toggle_bookmark():
+    data = request.json
+    user_id = data.get("user_id")
+    item_id = data.get("item_id")
+    item_data = data.get("item_data")
+
+    if not user_id or not item_id or not item_data:
+        return jsonify({"error": "Missing required fields"}), 400
+
+    doc_ref = db.collection("users").document(user_id).collection("bookmarks").document(item_id)
+    if doc_ref.get().exists:
+        doc_ref.delete()
+        return jsonify({"result": "deleted"})
+    else:
+        doc_ref.set(item_data)
+        return jsonify({"result": "added"})
+
+# ===== 북마크 조회 API =====
+@app.route("/bookmarks/<user_id>", methods=["GET"])
+def get_bookmarks(user_id):
+    bookmarks = get_user_bookmarks(user_id)
+    return jsonify(bookmarks)
+
+# ===== 추천 API =====
+@app.route("/recommend", methods=["POST"])
+def recommend_items():
+    data = request.json
+    user_id = data.get("user_id")
+    season = data.get("season")
+    situation = data.get("situation")
+    style = data.get("style")
+    category = data.get("category")
+
+    # 모든 옷 데이터 가져오기 (여기서는 예시로 casual만)
+    all_results = get_items(style, category)
+    if not all_results:
+        return jsonify([])
+
+    # 북마크 가져오기
+    bookmarks = get_user_bookmarks(user_id)
+
+    # 북마크가 없으면 랜덤 10개 추천
+    if not bookmarks:
+        results = random.sample(all_results, min(len(all_results), 10))
+    else:
+        # 유저 프로필 벡터 (북마크 스타일 평균)
+        fav_vectors = np.array([vectorize_style(item) for item in bookmarks])
+        user_profile = np.mean(fav_vectors, axis=0).reshape(1, -1)
+
+        # 후보 아이템 벡터
+        item_vectors = np.array([vectorize_style(item) for item in all_results])
+        similarities = cosine_similarity(item_vectors, user_profile).flatten()
+
+        # Top 5
+        top_indices = similarities.argsort()[::-1][:5]
+        top_items = [all_results[i] for i in top_indices]
+
+        # 랜덤 5개 (중복 제외)
+        remaining_items = [all_results[i] for i in range(len(all_results)) if i not in top_indices]
+        random_items = random.sample(remaining_items, min(len(remaining_items), 5))
+
+        results = top_items + random_items
+
+    # 결과에 북마크 여부 추가
+    bookmarked_ids = {b["id"] for b in bookmarks}
+    for item in results:
+        item["isBookmarked"] = item["id"] in bookmarked_ids
+
+    return jsonify(results)
+
+# ===== 앱 실행 =====
+if __name__ == "__main__":
+    app.run(debug=True)
