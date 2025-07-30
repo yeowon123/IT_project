@@ -2,7 +2,7 @@ import firebase_admin
 from firebase_admin import credentials, firestore
 
 # 1. 인증 초기화
-cred = credentials.Certificate("twenty-864c6-firebase-adminsdk-fbsvc-7f7ac30c9a.json")
+cred = credentials.Certificate("xxxxx")
 firebase_admin.initialize_app(cred)
 
 # 2. DB 연결
@@ -17,10 +17,10 @@ def add_to_bookmarks(user_id, item_data):
 # 4. 테스트 실행
 test_user_id = "tuUwXxrHJtXefZrSxpdWBTEUsVW"
 test_item = {
-    "id": "05sEp8w6epnQjj3zmNzw",
-    "title": "보트넥 린넨 루즈핏 여름 긴팔 <b>니트</b> 4col 봄 시스루 시원한소재 박시 여리핏 제이플로우",
-    "price": 29500,
-    "image": "https://shopping-phinf.pstatic.net/main_8617165/86171656802.jpg"
+    "id": "8FKsO9xYnFen1vccEZIl",
+    "title": "헤지스레이디스 HARRY 반팔 카라넥 니트 <b>가디건</b> 크림 HSSW5BL93CR",
+    "price": 159200,
+    "image": "https://shopping-phinf.pstatic.net/main_5287732/52877328185.20250323002357.jpg"
 }
 
 add_to_bookmarks(test_user_id, test_item)

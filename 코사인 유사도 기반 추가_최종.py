@@ -5,7 +5,7 @@ import numpy as np
 from sklearn.metrics.pairwise import cosine_similarity
 
 # Firebase 인증 및 초기화
-cred = credentials.Certificate("xxx")
+cred = credentials.Certificate("xxxxx")
 firebase_admin.initialize_app(cred)
 db = firestore.client()
 
@@ -19,23 +19,23 @@ def is_female_item(title):
 def get_items(style, category):
     path = f"clothes/{style}/{category}"
     docs = db.collection(path).stream()
-    items = []
+    bookmarks = []
     for doc in docs:
         data = doc.to_dict()
         data["id"] = doc.id
         data["category"] = category
         data["style"] = style
-        items.append(data)
-    return items
+        bookmarks.append(data)
+    return bookmarks
 
 def get_user_favorites(user_id):
-    fav_docs = db.collection("favorites").document(user_id).collection("items").stream()
-    favorites = []
+    fav_docs = db.collection("users").document(user_id).collection("bookmarks").stream()
+    users = []
     for doc in fav_docs:
         data = doc.to_dict()
         data["id"] = doc.id
-        favorites.append(data)
-    return favorites
+        users.append(data)
+    return users
 
 def recommend_items(season, situation, selected_style=None, selected_category=None, excluded_ids=None):
     situation_to_styles = {
@@ -59,9 +59,9 @@ def recommend_items(season, situation, selected_style=None, selected_category=No
 
     for style in styles:
         for category in ["tops", "bottoms", "setup"]:
-            items = get_items(style, category)
+            bookmarks = get_items(style, category)
             filtered = [
-                item for item in items
+                item for item in bookmarks
                 if season in item.get("season", [])
                 and is_female_item(item.get("title", ""))
             ]
@@ -85,7 +85,7 @@ def recommend_items(season, situation, selected_style=None, selected_category=No
     return results
 
 def add_to_favorites(user_id, item):
-    fav_ref = db.collection("favorites").document(user_id).collection("items").document(item["id"])
+    fav_ref = db.collection("users").document(user_id).collection("bookmarks").document(item["id"])
     fav_ref.set({
         "title": item["title"],
         "link": item.get("link"),
@@ -109,18 +109,18 @@ def vectorize_context(item, situation):
 # 문맥 기반 추천
 def context_based_recommend(user_id, season, situation, selected_style=None, selected_category=None,
                             prev_situation=None, prev_style=None):
-    favorites = get_user_favorites(user_id)
+    users = get_user_favorites(user_id)
     all_results = recommend_items(season, situation, selected_style, selected_category)
 
     if not all_results:
         return []
 
     # 즐겨찾기 없거나 입력이 다르면 → 랜덤 10개
-    if not favorites or situation != prev_situation or selected_style != prev_style:
+    if not users or situation != prev_situation or selected_style != prev_style:
         return random.sample(all_results, min(len(all_results), 10))
 
     # 코사인 유사도 기반 추천
-    fav_vectors = [vectorize_context(item, situation) for item in favorites]
+    fav_vectors = [vectorize_context(item, situation) for item in users]
     user_profile = np.mean(fav_vectors, axis=0).reshape(1, -1)
 
     item_vectors = [vectorize_context(item, situation) for item in all_results]
@@ -140,13 +140,13 @@ def context_based_recommend(user_id, season, situation, selected_style=None, sel
 
 # === 실행 코드 ===
 if __name__ == "__main__":
-    user_id = "user_001"
+    user_id = "uUwXxrHJtXefZrSxpdWBTEUsVWp1"
     season = "봄"
     situation = "데이트"
-    style = "casual"
+    style = "lovely"
     category = "상의"
     prev_situation = "데이트"
-    prev_style = "casual"
+    prev_style = "lovely"
 
     excluded_ids = set()
 
