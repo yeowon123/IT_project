@@ -3,7 +3,7 @@ from firebase_admin import credentials, firestore
 import pandas as pd
 
 # Firebase 초기화
-cred = credentials.Certificate("xxxxxx") 
+cred = credentials.Certificate("xxxxx") 
 firebase_admin.initialize_app(cred)
 db = firestore.client()
 
