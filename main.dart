@@ -29,7 +29,7 @@ class MyApp extends StatelessWidget {
               return MaterialPageRoute(
                 builder: (_) => StylePage(
                   name: args['name'] ?? '',
-                  gender: args['gender'] ?? '',
+
                   season: args['season'] ?? '',
                   situation: args['situation'] ?? '',
                 ),
