@@ -2,13 +2,6 @@ import urllib.request
 import urllib.parse
 import json
 import time
-import firebase_admin
-from firebase_admin import credentials, firestore
-
-# === Firebase 초기화 ===
-cred = credentials.Certificate("xxxxxxx")
-firebase_admin.initialize_app(cred)
-db = firestore.client()
 
 # === 네이버 API 인증 ===
 client_id = "kwZ2a5ZkIp1jEZ72Z6JF"
@@ -49,11 +42,15 @@ def detect_gender_from_title(title):
     else:
         return "남녀공용"
 
-# === 본격적인 수집 및 업로드
+# === 카테고리별 전체 카운터
+total_counter = {"tops": 0, "bottoms": 0, "setup": 0}
+
+# === 본격적인 수집
 for keyword, meta in keyword_meta.items():
     print(f"\n========== [{keyword}] 검색 결과 ==========\n")
     encText = urllib.parse.quote(keyword)
     start = 1
+    keyword_counter = 0  # 이 키워드에서 저장한 문서 수
 
     while start <= total_count:
         url = f"https://openapi.naver.com/v1/search/shop.json?query={encText}&display={display}&start={start}"
@@ -76,37 +73,25 @@ for keyword, meta in keyword_meta.items():
                 title = item['title']
                 lower_title = title.lower()
 
-                # === 키워드 필터링: 정확히 키워드 포함 안 되면 패스
+                # 키워드 필터링
                 if keyword.lower() not in lower_title:
                     continue
 
-                # === 성별 판정: 특정 키워드나 태그 포함 시 여성 강제 분류
+                # 성별 판단
                 if keyword in ["원피스", "블라우스", "치마", "스커트"] or any(tag in lower_title for tag in force_female_tags):
                     detected_gender = "여성"
                 else:
                     detected_gender = detect_gender_from_title(title)
 
-                # === 여성만 저장
                 if detected_gender != "여성":
                     continue
 
-                # === Firestore에 저장할 문서 구성
-                doc = {
-                    "title": title,
-                    "link": item['link'],
-                    "image": item['image'],
-                    "price": int(item['lprice']),
-                    "gender": detected_gender,
-                    "season": meta["season"],
-                    "style": meta["style"],
-                    "category": meta["category"]
-                }
+                # 카운트
+                keyword_counter += 1
+                total_counter[meta["category"]] += 1
 
-                # === Firestore 저장
-                path = f"clothes/{meta['style']}/{meta['category']}"
-                db.collection(path).add(doc)
-
-                print(f"[업로드 완료] {doc['title']} → {path} (성별: {detected_gender})")
+                # 출력 (업로드 없이 보기만)
+                print(f"[수집됨] {title} ({detected_gender})")
 
         else:
             print("Error Code:", rescode)
@@ -115,4 +100,13 @@ for keyword, meta in keyword_meta.items():
         start += display
         time.sleep(delay_sec)
 
-print("\n 러블리 스타일(여성 전용) 모든 키워드 수집 및 Firestore 업로드 완료!")
+    # ▶ 키워드별 개수 출력
+    print(f"→ [{keyword}] {meta['category']} : {keyword_counter}개 수집됨")
+
+# ▶ 전체 카테고리별 개수 출력
+print("\n 최종 수집 결과:")
+print(f"   tops: {total_counter['tops']}개")
+print(f"   bottoms: {total_counter['bottoms']}개")
+print(f"   setup: {total_counter['setup']}개")
+
+print("\n [테스트 모드] Firestore 업로드 없이 여성 전용 상품 수집 완료!")
