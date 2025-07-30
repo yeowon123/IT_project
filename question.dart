@@ -8,12 +8,10 @@ class QuestionPage extends StatefulWidget {
 }
 
 class _QuestionPageState extends State<QuestionPage> {
-  String? selectedGender;
   String? selectedSeason;
   String? selectedSituation;
-  String userName = '사용자'; // 기본 fallback
+  String userName = '사용자';
 
-  final List<String> genders = ['여자', '남자'];
   final List<String> seasons = ['봄', '여름', '가을', '겨울'];
   final List<String> situations = [
     '시험기간',
@@ -56,15 +54,6 @@ class _QuestionPageState extends State<QuestionPage> {
                   const SizedBox(height: 100),
 
                   buildDropdown(
-                    label: '성별',
-                    value: selectedGender,
-                    items: genders,
-                    onChanged: (value) =>
-                        setState(() => selectedGender = value),
-                  ),
-                  const SizedBox(height: 100),
-
-                  buildDropdown(
                     label: '계절',
                     value: selectedSeason,
                     items: seasons,
@@ -88,21 +77,17 @@ class _QuestionPageState extends State<QuestionPage> {
               bottom: 24,
               right: 24,
               child: OutlinedButton(
-                onPressed:
-                    (selectedGender != null &&
-                        selectedSeason != null &&
-                        selectedSituation != null)
+                onPressed: (selectedSeason != null && selectedSituation != null)
                     ? () {
                         final arguments = {
                           'name': userName,
-                          'gender': selectedGender!,
                           'season': selectedSeason!,
                           'situation': selectedSituation!,
                         };
 
                         if (selectedSituation == '면접' ||
                             selectedSituation == '시험기간') {
-                          arguments['style'] = ''; // 스타일 없음
+                          arguments['style'] = '';
                           Navigator.pushNamed(
                             context,
                             '/choice',
