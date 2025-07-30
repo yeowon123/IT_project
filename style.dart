@@ -1,14 +1,12 @@
 import 'package:flutter/material.dart';
 
 class StylePage extends StatefulWidget {
-  final String gender;
   final String season;
   final String situation;
-  final String name; // 사용자 이름 추가
+  final String name;
 
   const StylePage({
     super.key,
-    required this.gender,
     required this.season,
     required this.situation,
     required this.name,
@@ -40,7 +38,6 @@ class _StylePageState extends State<StylePage> {
           '/choice',
           arguments: {
             'name': widget.name,
-            'gender': widget.gender,
             'season': widget.season,
             'situation': widget.situation,
             'style': '',
@@ -61,7 +58,7 @@ class _StylePageState extends State<StylePage> {
               child: SingleChildScrollView(
                 padding: const EdgeInsets.symmetric(
                   horizontal: 24,
-                  vertical: 40,
+                  vertical: 24,
                 ),
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.center,
@@ -69,20 +66,18 @@ class _StylePageState extends State<StylePage> {
                     const SizedBox(height: 20),
                     Image.asset('assets/logo_3.png', width: 100),
                     const SizedBox(height: 30),
-                    buildTagBox('성별', widget.gender),
-                    const SizedBox(height: 16),
                     buildTagBox('계절', widget.season),
                     const SizedBox(height: 16),
                     buildTagBox('상황', widget.situation),
                     const SizedBox(height: 32),
                     buildStyleBox(),
-                    const SizedBox(height: 20),
+                    const SizedBox(height: 32),
                   ],
                 ),
               ),
             ),
             Padding(
-              padding: const EdgeInsets.fromLTRB(24, 0, 24, 24),
+              padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 12),
               child: Row(
                 mainAxisAlignment: MainAxisAlignment.spaceBetween,
                 children: [
@@ -109,7 +104,6 @@ class _StylePageState extends State<StylePage> {
                               '/choice',
                               arguments: {
                                 'name': widget.name,
-                                'gender': widget.gender,
                                 'season': widget.season,
                                 'situation': widget.situation,
                                 'style': selectedStyle,
