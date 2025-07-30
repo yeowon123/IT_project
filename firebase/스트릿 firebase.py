@@ -44,11 +44,8 @@ def detect_gender_from_title(title):
 
     if has_female and not has_male:
         return "여성"
-    elif has_male and not has_female:
-        return "남성"
     else:
-        return "남녀공용"
-
+        continue
 # === 본격적인 수집 및 업로드
 for keyword, meta in keyword_meta.items():
     print(f"\n========== [{keyword}] 검색 결과 ==========\n")
