@@ -25,6 +25,7 @@ def get_items(style, category):
         data["id"] = doc.id
         data["category"] = category
         data["style"] = style
+        data["image"] = data.get("image", "")  
         bookmarks.append(data)
     return bookmarks
 
