@@ -6,7 +6,7 @@ import firebase_admin
 from firebase_admin import credentials, firestore
 
 # === Firebase 초기화 ===
-cred = credentials.Certificate("xxxxxx")
+cred = credentials.Certificate("xxxxxxx")
 firebase_admin.initialize_app(cred)
 db = firestore.client()
 
@@ -16,9 +16,9 @@ client_secret = "Uo947wMLb_"
 
 # === 성별 단어 리스트
 female_words = ["여성", "여자", "레이디", "girl", "woman", "우먼", "캡", "브라탑", "나시", "언더붑", "탑"]
-male_words = ["남성", "남자", "man", "boy", "맨"]
+male_words = ["남성", "남자", "man", "boy"]
 
-# === 스타일 키워드 (여성 강제 지정용)
+# === 여성 강제 태그
 force_female_tags = ["리본", "쉬폰", "하늘하늘"]
 
 # === 키워드별 메타데이터
@@ -32,7 +32,7 @@ keyword_meta = {
 }
 
 # === 수집 설정
-total_count = 200
+total_count = 400
 display = 100
 delay_sec = 0.5
 
@@ -80,15 +80,15 @@ for keyword, meta in keyword_meta.items():
                 if keyword.lower() not in lower_title:
                     continue
 
-                # === 레깅스 필터링
-                if "레깅스" in title:
-                    continue  # 레깅스는 업로드하지 않음
-
-                # === 성별 판정 로직
-                if keyword in ["원피스", "블라우스","치마","스커트"] or any(tag in lower_title for tag in force_female_tags):
+                # === 성별 판정: 특정 키워드나 태그 포함 시 여성 강제 분류
+                if keyword in ["원피스", "블라우스", "치마", "스커트"] or any(tag in lower_title for tag in force_female_tags):
                     detected_gender = "여성"
                 else:
                     detected_gender = detect_gender_from_title(title)
+
+                # === 여성만 저장
+                if detected_gender != "여성":
+                    continue
 
                 # === Firestore에 저장할 문서 구성
                 doc = {
@@ -115,4 +115,4 @@ for keyword, meta in keyword_meta.items():
         start += display
         time.sleep(delay_sec)
 
-print("\n✅ 러블리 스타일 모든 키워드 수집 및 Firestore 업로드 완료!")
+print("\n 러블리 스타일(여성 전용) 모든 키워드 수집 및 Firestore 업로드 완료!")

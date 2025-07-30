@@ -1,3 +1,4 @@
+import re
 import urllib.request
 import urllib.parse
 import json
@@ -6,7 +7,7 @@ import firebase_admin
 from firebase_admin import credentials, firestore
 
 # === Firebase 초기화 ===
-cred = credentials.Certificate("xxxxxx")
+cred = credentials.Certificate("xxxxxxx")  
 firebase_admin.initialize_app(cred)
 db = firestore.client()
 
@@ -16,23 +17,23 @@ client_secret = "Uo947wMLb_"
 
 # === 성별 단어 리스트
 female_words = ["여성", "여자", "레이디", "girl", "woman", "우먼", "캡", "브라탑", "나시", "언더붑", "탑"]
-male_words = ["남성", "남자", "man", "boy", "맨"]
+male_words = ["남성", "남자", "man", "boy"]
 
-# === 키워드별 메타데이터 (분류 가능한 키워드만 포함)
+# === 키워드별 메타데이터
 keyword_meta = {
     "그래픽 티셔츠": {"category": "tops",    "style": "street", "season": ["봄", "여름", "가을"]},
     "와이드 팬츠":   {"category": "bottoms", "style": "street", "season": ["봄", "여름", "가을", "겨울"]},
     "카고 팬츠":     {"category": "bottoms", "style": "street", "season": ["봄", "여름", "가을", "겨울"]},
     "크롭탑":       {"category": "tops",    "style": "street", "season": ["봄", "여름", "가을"]},
-    "오버사이즈 티":     {"category": "tops", "style": "street", "season": ["봄","여름","가을"]},
-    "플란넬 셔츠":     {"category": "tops", "style": "street", "season": ["봄","여름","가을", "겨울"]},
-    "아노락":     {"category": "tops", "style": "street", "season": ["봄","여름","가을", "겨울"]},
-    "봄버 자켓":     {"category": "tops", "style": "street", "season": ["봄","가을", "겨울"]},
-    "트랙 팬츠":     {"category": "bottoms", "style": "street", "season": ["봄","여름","가을", "겨울"]},
+    "오버사이즈 티": {"category": "tops",    "style": "street", "season": ["봄", "여름", "가을"]},
+    "플란넬 셔츠":   {"category": "tops",    "style": "street", "season": ["봄", "여름", "가을", "겨울"]},
+    "아노락":       {"category": "tops",    "style": "street", "season": ["봄", "여름", "가을", "겨울"]},
+    "봄버 자켓":     {"category": "tops",    "style": "street", "season": ["봄", "가을", "겨울"]},
+    "트랙 팬츠":     {"category": "bottoms", "style": "street", "season": ["봄", "여름", "가을", "겨울"]},
 }
 
 # === 수집 설정
-total_count = 200
+total_count = 400
 display = 100
 delay_sec = 0.5
 
@@ -45,7 +46,8 @@ def detect_gender_from_title(title):
     if has_female and not has_male:
         return "여성"
     else:
-        continue
+        return None  # 여성 아니면 무시
+
 # === 본격적인 수집 및 업로드
 for keyword, meta in keyword_meta.items():
     print(f"\n========== [{keyword}] 검색 결과 ==========\n")
@@ -72,13 +74,18 @@ for keyword, meta in keyword_meta.items():
             for item in items:
                 title = item['title']
                 lower_title = title.lower()
+                clean_title = re.sub(r"<.*?>", "", title) 
 
-                # === 키워드 필터링: 정확히 키워드 포함 안 되면 패스
+                # === 키워드 필터링
                 if keyword.lower() not in lower_title:
                     continue
 
-                # === 성별 판정
+                # === 성별 감지
                 detected_gender = detect_gender_from_title(title)
+
+                # === 여성만 저장
+                if detected_gender != "여성":
+                    continue
 
                 # === 업로드할 문서 구성
                 doc = {
@@ -92,7 +99,7 @@ for keyword, meta in keyword_meta.items():
                     "category": meta["category"]
                 }
 
-                # === Firestore 경로 설정
+                # === Firestore 저장 경로
                 path = f"clothes/{meta['style']}/{meta['category']}"
                 db.collection(path).add(doc)
 
@@ -105,4 +112,4 @@ for keyword, meta in keyword_meta.items():
         start += display
         time.sleep(delay_sec)
 
-print("\n✅ 스트릿 스타일 모든 키워드 수집 및 Firebase 업로드 완료!")
+print("\n 스트릿 스타일(여성 전용) 모든 키워드 수집 및 Firebase 업로드 완료!")

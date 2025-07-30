@@ -23,13 +23,13 @@ keyword_meta = {
 }
 
 # === 수집 설정 ===
-total_count = 200
+total_count = 400
 display = 100
 delay_sec = 0.5
 
 # === 성별 키워드
 female_words = ["여성", "여자", "레이디", "girl", "woman", "우먼", "캡", "브라탑", "나시", "언더붑", "탑"]
-male_words = ["남성", "남자", "man", "boy", "맨"]
+male_words = ["남성", "남자", "man", "boy"]
 
 # === 본격 실행 ===
 for keyword, meta in keyword_meta.items():
@@ -62,16 +62,15 @@ for keyword, meta in keyword_meta.items():
                 if keyword.lower() not in lower_title:
                     continue
 
-                # 🔍 성별 자동 판정
+                # 성별 자동 판정
                 has_female = any(word in title for word in female_words)
                 has_male = any(word in title for word in male_words)
 
+                # 여성 전용인 경우만 저장
                 if has_female and not has_male:
                     detected_gender = "여성"
-                elif has_male and not has_female:
-                    detected_gender = "남성"
                 else:
-                    detected_gender = "남녀공용"
+                    continue  # 여성 아니면 건너뜀
 
                 # 🔹 저장할 문서
                 doc = {
@@ -98,4 +97,4 @@ for keyword, meta in keyword_meta.items():
         start += display
         time.sleep(delay_sec)
 
-print("\n✅ 댄디 스타일 모든 키워드 수집 및 Firebase 업로드 완료!")
+print("\n 댄디 스타일(여성 전용) 모든 키워드 수집 및 Firebase 업로드 완료!")

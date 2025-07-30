@@ -3,7 +3,7 @@ from firebase_admin import credentials, firestore
 import pandas as pd
 
 # Firebase 초기화
-cred = credentials.Certificate("xxxxxx")  # ← 경로 수정
+cred = credentials.Certificate("xxxxxx") 
 firebase_admin.initialize_app(cred)
 db = firestore.client()
 
@@ -33,16 +33,16 @@ with pd.ExcelWriter("엑셀(시트+통합).xlsx") as writer:
                     df = pd.DataFrame(items)
                     sheet_name = f"{style}_{category}"[:31]  # 시트 이름 31자 제한
                     df.to_excel(writer, sheet_name=sheet_name, index=False)
-                    print(f"✅ {sheet_name} 저장 완료!")
+                    print(f" {sheet_name} 저장 완료!")
                 else:
-                    print(f"⚠️ {style}/{category} → 데이터 없음")
+                    print(f" {style}/{category} → 데이터 없음")
             except Exception as e:
-                print(f"❌ {style}/{category} 실패: {e}")
+                print(f" {style}/{category} 실패: {e}")
 
     # 마지막에 통합 시트 저장
     if all_items:
         df_all = pd.DataFrame(all_items)
         df_all.to_excel(writer, sheet_name="통합", index=False)
-        print("✅ 통합 시트 저장 완료!")
+        print(" 통합 시트 저장 완료!")
     else:
-        print("⚠️ 통합할 데이터가 없습니다.")
+        print(" 통합할 데이터가 없습니다.")
