@@ -1,0 +1,157 @@
+import firebase_admin
+from firebase_admin import credentials, firestore
+import random
+
+# Firebase 인증 및 초기화
+cred = credentials.Certificate("xxx")
+firebase_admin.initialize_app(cred)
+db = firestore.client()
+
+female_words = ["여성", "여자", "레이디", "girl", "woman", "우먼",
+                "캡", "브라탑", "나시", "언더붑", "탑"]
+
+def is_female_item(title):
+    title_lower = title.lower()
+    return any(keyword in title_lower for keyword in female_words)
+
+def get_items(style, category):
+    path = f"clothes/{style}/{category}"
+    docs = db.collection(path).stream()
+    items = []
+    for doc in docs:
+        data = doc.to_dict()
+        data["id"] = doc.id
+        data["category"] = category
+        data["style"] = style
+        items.append(data)
+    return items
+
+def get_user_favorites(user_id):
+    fav_docs = db.collection("favorites").document(user_id).collection("items").stream()
+    favorites = []
+    for doc in fav_docs:
+        data = doc.to_dict()
+        data["id"] = doc.id
+        favorites.append(data)
+    return favorites
+
+def recommend_items(season, situation, selected_style=None, selected_category=None, excluded_ids=None):
+    situation_to_styles = {
+        "시험기간": ["casual", "sporty", "street", "vintage"],
+        "면접": ["casual", "dandy", "lovely"],
+        "default": ["casual", "sporty", "street", "vintage", "dandy", "lovely"]
+    }
+
+    exclude_keywords = {
+        "면접": {
+            "casual": ["맨투맨"],
+            "lovely": ["원피스"]
+        }
+    }
+
+    styles = situation_to_styles.get(situation, situation_to_styles["default"])
+    results = []
+
+    category_map = {"상의": "tops", "하의": "bottoms", "셋업": "setup"}
+    target_category = category_map.get(selected_category)
+
+    for style in styles:
+        for category in ["tops", "bottoms", "setup"]:
+            items = get_items(style, category)
+            filtered = [
+                item for item in items
+                if season in item.get("season", [])
+                and is_female_item(item.get("title", ""))
+            ]
+            if situation in exclude_keywords and style in exclude_keywords[situation]:
+                excluded = exclude_keywords[situation][style]
+                filtered = [
+                    item for item in filtered
+                    if not any(word in item["title"] for word in excluded)
+                ]
+            results.extend(filtered)
+
+    if situation not in ["시험기간", "면접"] and selected_style:
+        results = [item for item in results if item["style"] == selected_style]
+
+    if target_category:
+        results = [item for item in results if item["category"] == target_category]
+
+    if excluded_ids:
+        results = [item for item in results if item["id"] not in excluded_ids]
+
+    return results
+
+def add_to_favorites(user_id, item):
+    fav_ref = db.collection("favorites").document(user_id).collection("items").document(item["id"])
+    fav_ref.set({
+        "title": item["title"],
+        "link": item.get("link"),
+        "image": item.get("image"),
+        "info": item.get("info"),
+        "category": item["category"],
+        "style": item["style"]
+    })
+    print(f"'{item['title']}' 이(가) 즐겨찾기에 추가되었습니다.")
+
+def context_based_recommend(user_id, season, situation, selected_style=None, selected_category=None,
+                            prev_situation=None, prev_style=None):
+    favorites = get_user_favorites(user_id)
+    all_results = recommend_items(season, situation, selected_style, selected_category)
+
+    if not all_results:
+        return []
+
+    if favorites and situation == prev_situation and selected_style == prev_style:
+        fav_results = [item for item in all_results if any(f["title"] == item["title"] for f in favorites)]
+        fav_top = random.sample(fav_results, min(len(fav_results), 5))
+
+        non_fav_results = [item for item in all_results if item not in fav_top]
+        rand_top = random.sample(non_fav_results, min(len(non_fav_results), 5))
+
+        combined = fav_top + rand_top
+
+        # 부족하면 나머지를 추가로 채우기
+        if len(combined) < 10:
+            remaining = [item for item in all_results if item not in combined]
+            combined += random.sample(remaining, min(len(remaining), 10 - len(combined)))
+
+        return combined[:10]
+    else:
+        return random.sample(all_results, min(len(all_results), 10))
+
+# === 실행 코드 ===
+if __name__ == "__main__":
+    user_id = "user_001"
+    season = "봄"
+    situation = "데이트"
+    style = "casual"
+    category = "상의"
+    prev_situation = "데이트"
+    prev_style = "casual"
+
+    excluded_ids = set()
+
+    while True:
+        recommended = context_based_recommend(
+            user_id, season, situation, style, category,
+            prev_situation, prev_style
+        )
+
+        if not recommended:
+            print("조건에 맞는 추천 아이템이 없습니다.")
+            break
+
+        print(f"\n추천 결과 (총 {len(recommended)}개):")
+        for idx, item in enumerate(recommended, 1):
+            print(f"{idx}. {item['title']} → {item.get('link', '링크 없음')}")
+
+        again = input("\n추천이 마음에 드나요? (y/n): ")
+        if again.lower() == "n":
+            excluded_ids.update(item["id"] for item in recommended)
+            continue
+
+        choice = int(input("마음에 드는 아이템 번호를 선택 (없으면 0): "))
+        if choice != 0 and 1 <= choice <= len(recommended):
+            add_to_favorites(user_id, recommended[choice - 1])
+        break
