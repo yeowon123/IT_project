@@ -1,0 +1,5 @@
+# pickle 파일 전체 제외
+*.pkl
+
+# 임베딩 결과 폴더 전체 제외
+embeddings_by_style/
