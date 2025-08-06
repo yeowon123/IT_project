@@ -11,7 +11,7 @@ from sentence_transformers import SentenceTransformer, util
 import firebase_admin
 from firebase_admin import credentials, firestore
 
-# 🔐 API 키
+#  API 키
 API_KEY = "twenty-clothes-api-key"
 
 # === Firebase 초기화
@@ -49,7 +49,7 @@ class RecommendRequest(BaseModel):
     password: str
     favorites: List[FavoriteItem] = []
 
-# 🔍 inputs에서 사용자 입력 정보 불러오기
+#  inputs에서 사용자 입력 정보 불러오기
 def get_user_input(email: str, password: str):
     input_doc = db.collection("users").document(email).collection("inputs").document("info").get()
     if not input_doc.exists:
@@ -66,7 +66,7 @@ def get_user_input(email: str, password: str):
         "situation": data["situation"]
     }
 
-# ⭐️ 즐겨찾기에서 해당 스타일 아이템 5벌 이상 불러오기
+#  즐겨찾기에서 해당 스타일 아이템 5벌 이상 불러오기
 def get_favorites_from_bookmark(email: str, target_style: str):
     docs = db.collection("users").document(email).collection("bookmark").where("style", "==", target_style).stream()
     favorites = []
@@ -80,7 +80,7 @@ def get_favorites_from_bookmark(email: str, target_style: str):
         })
     return favorites
 
-# 📂 아이템 불러오기
+#  아이템 불러오기
 def load_items(style, category=None):
     items = []
     categories = STYLE_CATEGORIES.get(style, [])
@@ -91,7 +91,7 @@ def load_items(style, category=None):
             items += joblib.load(path)
     return items
 
-# 💖 즐겨찾기 기반 유사도 추천
+#  즐겨찾기 기반 유사도 추천
 def recommend_by_favorites(favorites, style):
     fav_names = [fav['name'] for fav in favorites]
     fav_embeddings = model.encode(fav_names, convert_to_tensor=True)
@@ -109,7 +109,7 @@ def recommend_by_favorites(favorites, style):
     sorted_items = sorted(sim_scores, key=lambda x: x[1], reverse=True)
     return [item[0] for item in sorted_items[:5]]
 
-# 🎲 필터 조건 기반 무작위 추천
+#  필터 조건 기반 무작위 추천
 def recommend_random(user_input, count=10):
     items = load_items(user_input['style'], user_input['category'])
     filtered = [
@@ -118,7 +118,7 @@ def recommend_random(user_input, count=10):
     ]
     return random.sample(filtered, min(len(filtered), count))
 
-# 🧠 추천 로직
+#  추천 로직
 def recommend(user_input, favorites):
     style = user_input['style']
     category = user_input['category']
@@ -132,7 +132,7 @@ def recommend(user_input, favorites):
     else:
         return recommend_random(user_input, count=10)
 
-# 💾 results 저장 (style + 임베딩)
+#  results 저장 (style + 임베딩)
 def save_result(email, user_input, recommendations):
     rec_for_firestore = []
     for item in recommendations:
@@ -147,7 +147,7 @@ def save_result(email, user_input, recommendations):
         "recommendations": rec_for_firestore
     })
 
-# 🚀 FastAPI 추천 엔드포인트
+#  FastAPI 추천 엔드포인트
 @app.post("/recommend")
 async def get_recommendation(
     data: RecommendRequest,
