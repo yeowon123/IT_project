@@ -15,7 +15,7 @@ from firebase_admin import credentials, firestore
 API_KEY = "twenty-clothes-api-key"
 
 # === Firebase 초기화 ===
-cred = credentials.Certificate("xxxxx") 
+cred = credentials.Certificate("xxxxxx") 
 firebase_admin.initialize_app(cred)
 db = firestore.client()  # Firestore DB 클라이언트
 
