@@ -11,7 +11,7 @@ from sentence_transformers import SentenceTransformer, util
 import firebase_admin
 from firebase_admin import credentials, firestore
 
-# 🔐 API 키 상수
+# API 키 상수
 API_KEY = "twenty-clothes-api-key"
 
 # === Firebase 초기화 ===
@@ -51,7 +51,7 @@ class UserInput(BaseModel):
     situation: str
 
 class RecommendRequest(BaseModel):
-    user_id: str  # 🔹 유저 ID 추가 (Firestore 저장에 필요)
+    email : str  # 유저 ID 추가 (Firestore 저장에 필요)
     user_input: UserInput
     favorites: List[FavoriteItem] = []
 
@@ -105,11 +105,11 @@ def recommend(user_input, favorites):
     return recommend_random(user_input, count=10)
 
 # === Firestore 저장 함수 ===
-def save_to_firestore(user_id, user_input, recommendations):
-    # 🔸 (선택) embedding 제거
+def save_to_firestore(email , user_input, recommendations):
+    # embedding 제거
     for rec in recommendations:
         rec.pop("embedding", None)
-    doc_ref = db.collection("users").document(user_id).collection("result").document()
+    doc_ref = db.collection("users").document(email).collection("result").document()
     doc_ref.set({
         "style": user_input["style"],
         "category": user_input["category"],
@@ -122,7 +122,7 @@ def save_to_firestore(user_id, user_input, recommendations):
 @app.post("/recommend")
 async def get_recommendation(
     data: RecommendRequest,
-    x_api_key: str = Header(...)  # 🔐 API 키를 헤더에서 받음
+    x_api_key: str = Header(...)  #  API 키를 헤더에서 받음
 ):
     # 🔒 API Key 검사
     if x_api_key != API_KEY:
@@ -133,6 +133,6 @@ async def get_recommendation(
     recommendations = recommend(user_input_dict, favorites_list)
 
     # Firestore 저장
-    save_to_firestore(data.user_id, user_input_dict, recommendations)
+    save_to_firestore(data.email, user_input_dict, recommendations)
 
     return {"recommendations": recommendations}

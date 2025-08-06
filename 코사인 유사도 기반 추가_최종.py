@@ -29,8 +29,8 @@ def get_items(style, category):
         bookmarks.append(data)
     return bookmarks
 
-def get_user_favorites(user_id):
-    fav_docs = db.collection("users").document(user_id).collection("bookmarks").stream()
+def get_user_favorites(email):
+    fav_docs = db.collection("users").document(email).collection("bookmarks").stream()
     users = []
     for doc in fav_docs:
         data = doc.to_dict()
@@ -85,8 +85,8 @@ def recommend_items(season, situation, selected_style=None, selected_category=No
 
     return results
 
-def add_to_favorites(user_id, item):
-    fav_ref = db.collection("users").document(user_id).collection("bookmarks").document(item["id"])
+def add_to_favorites(email, item):
+    fav_ref = db.collection("users").document(email).collection("bookmarks").document(item["id"])
     fav_ref.set({
         "title": item["title"],
         "link": item.get("link"),
@@ -108,9 +108,9 @@ def vectorize_context(item, situation):
     return np.array(situation_vec + style_vec)
 
 # 문맥 기반 추천
-def context_based_recommend(user_id, season, situation, selected_style=None, selected_category=None,
+def context_based_recommend(email, season, situation, selected_style=None, selected_category=None,
                             prev_situation=None, prev_style=None):
-    users = get_user_favorites(user_id)
+    users = get_user_favorites(email)
     all_results = recommend_items(season, situation, selected_style, selected_category)
 
     if not all_results:
@@ -141,7 +141,7 @@ def context_based_recommend(user_id, season, situation, selected_style=None, sel
 
 # === 실행 코드 ===
 if __name__ == "__main__":
-    user_id = "uUwXxrHJtXefZrSxpdWBTEUsVWp1"
+    email = "uUwXxrHJtXefZrSxpdWBTEUsVWp1"
     season = "봄"
     situation = "데이트"
     style = "lovely"
@@ -153,7 +153,7 @@ if __name__ == "__main__":
 
     while True:
         recommended = context_based_recommend(
-            user_id, season, situation, style, category,
+            email, season, situation, style, category,
             prev_situation, prev_style
         )
 
@@ -172,5 +172,5 @@ if __name__ == "__main__":
 
         choice = int(input("마음에 드는 아이템 번호를 선택 (없으면 0): "))
         if choice != 0 and 1 <= choice <= len(recommended):
-            add_to_favorites(user_id, recommended[choice - 1])
+            add_to_favorites(email, recommended[choice - 1])
         break
