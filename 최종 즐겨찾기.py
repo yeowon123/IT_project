@@ -124,7 +124,7 @@ async def get_recommendation(
     data: RecommendRequest,
     x_api_key: str = Header(...)  #  API 키를 헤더에서 받음
 ):
-    # 🔒 API Key 검사
+    #  API Key 검사
     if x_api_key != API_KEY:
         raise HTTPException(status_code=403, detail="Invalid API Key")
 
