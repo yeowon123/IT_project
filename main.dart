@@ -1,9 +1,15 @@
 import 'package:flutter/material.dart';
+import 'package:firebase_core/firebase_core.dart';
+import 'firebase_options.dart';
 import 'pages/style_page.dart';
 import 'pages/choice_page.dart';
 import 'pages/question_page.dart';
+import 'pages/recommendation_page.dart';
+import 'pages/stylist_page.dart'; // ✅ StylistPage import 추가
 
-void main() {
+void main() async {
+  WidgetsFlutterBinding.ensureInitialized();
+  await Firebase.initializeApp(options: DefaultFirebaseOptions.currentPlatform);
   runApp(const MyApp());
 }
 
@@ -29,7 +35,6 @@ class MyApp extends StatelessWidget {
               return MaterialPageRoute(
                 builder: (_) => StylePage(
                   name: args['name'] ?? '',
-
                   season: args['season'] ?? '',
                   situation: args['situation'] ?? '',
                 ),
@@ -44,6 +49,18 @@ class MyApp extends StatelessWidget {
               );
             }
             return _errorRoute('ChoicePage');
+          case '/recommendation':
+            if (args is Map<String, String?>) {
+              return MaterialPageRoute(
+                builder: (_) => const RecommendationPage(),
+                settings: RouteSettings(arguments: args),
+              );
+            }
+            return _errorRoute('RecommendationPage');
+          case '/stylist':
+            return MaterialPageRoute(
+              builder: (_) => const StylistPage(),
+            ); // ✅ StylistPage 라우트 추가
           default:
             return _errorRoute('Unknown');
         }
