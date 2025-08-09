@@ -1,16 +1,9 @@
 import 'package:flutter/material.dart';
+import 'package:cloud_firestore/cloud_firestore.dart';
+import '../utils/user_handle.dart'; // 추가
 
 class StylePage extends StatefulWidget {
-  final String season;
-  final String situation;
-  final String name;
-
-  const StylePage({
-    super.key,
-    required this.season,
-    required this.situation,
-    required this.name,
-  });
+  const StylePage({super.key});
 
   @override
   State<StylePage> createState() => _StylePageState();
@@ -18,6 +11,15 @@ class StylePage extends StatefulWidget {
 
 class _StylePageState extends State<StylePage> {
   String? selectedStyle;
+
+  // route args
+  String _season = '';
+  String _situation = '';
+  String _name = '사용자';
+
+  bool _didInit = false;
+  bool _loadingPrefill = false;
+  bool _saving = false;
 
   final List<String> styles = [
     '캐주얼 / 미니멀',
@@ -29,21 +31,86 @@ class _StylePageState extends State<StylePage> {
   ];
 
   @override
-  void initState() {
-    super.initState();
-    if (widget.situation == '면접' || widget.situation == '시험기간') {
+  void didChangeDependencies() {
+    super.didChangeDependencies();
+    if (_didInit) return;
+
+    final args = ModalRoute.of(context)?.settings.arguments;
+    if (args != null && args is Map<String, dynamic>) {
+      _name = (args['name'] as String?) ?? '사용자';
+      _season = (args['season'] as String?) ?? '';
+      _situation = (args['situation'] as String?) ?? '';
+    }
+
+    if (_situation == '면접' || _situation == '시험기간') {
       Future.microtask(() {
         Navigator.pushReplacementNamed(
           context,
           '/choice',
           arguments: {
-            'name': widget.name,
-            'season': widget.season,
-            'situation': widget.situation,
+            'name': _name,
+            'season': _season,
+            'situation': _situation,
             'style': '',
           },
         );
       });
+    } else {
+      _prefillStyleFromFirestore();
+    }
+
+    _didInit = true;
+  }
+
+  Future<void> _prefillStyleFromFirestore() async {
+    setState(() => _loadingPrefill = true);
+    try {
+      final doc = await userDocByHandle();
+      final snap = await doc.get();
+      final data = snap.data();
+      if (data == null) return;
+
+      final s = data['style'] as String?;
+      if (s != null && mounted) {
+        setState(() => selectedStyle = s);
+      }
+    } catch (_) {
+      // 필요 시 오류 처리
+    } finally {
+      if (mounted) setState(() => _loadingPrefill = false);
+    }
+  }
+
+  Future<void> _saveAndGoNext() async {
+    if (selectedStyle == null) return;
+
+    setState(() => _saving = true);
+    try {
+      final doc = await userDocByHandle();
+      // style 병합 저장 (users/{handle})
+      await doc.set({
+        'style': selectedStyle,
+        'updatedAt': FieldValue.serverTimestamp(),
+      }, SetOptions(merge: true));
+
+      if (!mounted) return;
+      Navigator.pushNamed(
+        context,
+        '/choice',
+        arguments: {
+          'name': _name,
+          'season': _season,
+          'situation': _situation,
+          'style': selectedStyle!,
+        },
+      );
+    } catch (_) {
+      if (!mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('저장 중 오류가 발생했어요. 다시 시도해주세요.')),
+      );
+    } finally {
+      if (mounted) setState(() => _saving = false);
     }
   }
 
@@ -66,11 +133,17 @@ class _StylePageState extends State<StylePage> {
                     const SizedBox(height: 20),
                     Image.asset('assets/logo_3.png', width: 100),
                     const SizedBox(height: 30),
-                    buildTagBox('계절', widget.season),
+                    buildTagBox('계절', _season),
                     const SizedBox(height: 16),
-                    buildTagBox('상황', widget.situation),
+                    buildTagBox('상황', _situation),
                     const SizedBox(height: 32),
-                    buildStyleBox(),
+                    Opacity(
+                      opacity: _loadingPrefill ? 0.5 : 1,
+                      child: IgnorePointer(
+                        ignoring: _loadingPrefill,
+                        child: buildStyleBox(),
+                      ),
+                    ),
                     const SizedBox(height: 32),
                   ],
                 ),
@@ -97,19 +170,8 @@ class _StylePageState extends State<StylePage> {
                     ),
                   ),
                   OutlinedButton(
-                    onPressed: selectedStyle != null
-                        ? () {
-                            Navigator.pushNamed(
-                              context,
-                              '/choice',
-                              arguments: {
-                                'name': widget.name,
-                                'season': widget.season,
-                                'situation': widget.situation,
-                                'style': selectedStyle,
-                              },
-                            );
-                          }
+                    onPressed: (!_saving && selectedStyle != null)
+                        ? _saveAndGoNext
                         : null,
                     style: OutlinedButton.styleFrom(
                       shape: const StadiumBorder(),
@@ -119,10 +181,16 @@ class _StylePageState extends State<StylePage> {
                         vertical: 10,
                       ),
                     ),
-                    child: const Text(
-                      'Save',
-                      style: TextStyle(color: Colors.black),
-                    ),
+                    child: _saving
+                        ? const SizedBox(
+                            width: 16,
+                            height: 16,
+                            child: CircularProgressIndicator(strokeWidth: 2),
+                          )
+                        : const Text(
+                            'Save',
+                            style: TextStyle(color: Colors.black),
+                          ),
                   ),
                 ],
               ),
@@ -168,10 +236,10 @@ class _StylePageState extends State<StylePage> {
     return Container(
       width: double.infinity,
       padding: const EdgeInsets.only(top: 16, bottom: 4),
-      decoration: BoxDecoration(
+      decoration: const BoxDecoration(
         color: Colors.white,
-        borderRadius: BorderRadius.circular(16),
-        boxShadow: const [
+        borderRadius: BorderRadius.all(Radius.circular(16)),
+        boxShadow: [
           BoxShadow(
             color: Colors.black26,
             blurRadius: 10,
@@ -193,6 +261,8 @@ class _StylePageState extends State<StylePage> {
           ...styles.asMap().entries.map((entry) {
             final index = entry.key;
             final style = entry.value;
+            final isSelected = selectedStyle == style;
+
             return Column(
               children: [
                 GestureDetector(
@@ -210,16 +280,16 @@ class _StylePageState extends State<StylePage> {
                           style: TextStyle(
                             fontSize: 14,
                             color: Colors.black,
-                            fontWeight: selectedStyle == style
+                            fontWeight: isSelected
                                 ? FontWeight.bold
                                 : FontWeight.normal,
                           ),
                         ),
                         Icon(
-                          selectedStyle == style
+                          isSelected
                               ? Icons.check_box
                               : Icons.check_box_outline_blank,
-                          color: selectedStyle == style
+                          color: isSelected
                               ? const Color(0xFF63C6D1)
                               : const Color(0xFFB3B3B3),
                         ),
