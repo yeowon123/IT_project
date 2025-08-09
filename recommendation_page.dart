@@ -4,8 +4,8 @@ import 'package:url_launcher/url_launcher.dart';
 import 'package:flutter/services.dart';
 import 'dart:convert';
 import 'package:http/http.dart' as http;
-import 'package:firebase_auth/firebase_auth.dart';
 import '../models/recommendation_response.dart';
+import '../utils/user_handle.dart'; // 추가
 
 class RecommendationPage extends StatefulWidget {
   const RecommendationPage({super.key});
@@ -84,7 +84,7 @@ class _RecommendationPageState extends State<RecommendationPage> {
       isLoading = true;
       loadFailed = false;
       isMock = false;
-      page = 0; 
+      page = 0;
     });
 
     try {
@@ -124,7 +124,6 @@ class _RecommendationPageState extends State<RecommendationPage> {
     }
   }
 
-  
   void showMockItems() {
     final mockItems = List.generate(12, (i) {
       return {
@@ -184,6 +183,7 @@ class _RecommendationPageState extends State<RecommendationPage> {
           'title': title,
           'image': image,
           'link': link,
+          'category': category, // 카테고리도 함께 저장
           'savedAt': FieldValue.serverTimestamp(),
         });
       }
@@ -191,14 +191,8 @@ class _RecommendationPageState extends State<RecommendationPage> {
     return result;
   }
 
-  // 즐겨찾기 저장: 로그인 보장 → uid 사용, 기존 데이터 보존(append)
+  // 즐겨찾기 저장: users/{handle}/favorites/{autoId}
   Future<void> _saveFavorites() async {
-    final user = FirebaseAuth.instance.currentUser!; 
-    final favoritesCol = FirebaseFirestore.instance
-        .collection('users')
-        .doc(user.uid)
-        .collection('favorites');
-
     final items = _collectFavoriteItems();
     if (items.isEmpty) {
       if (!mounted) return;
@@ -209,9 +203,12 @@ class _RecommendationPageState extends State<RecommendationPage> {
     }
 
     try {
+      final userDoc = await userDocByHandle();
+      final favoritesCol = userDoc.collection('favorites');
+
       final batch = FirebaseFirestore.instance.batch();
       for (final item in items) {
-        final ref = favoritesCol.doc(); 
+        final ref = favoritesCol.doc(); // 자동 ID → 누적 저장
         batch.set(ref, item);
       }
       await batch.commit();
@@ -236,7 +233,6 @@ class _RecommendationPageState extends State<RecommendationPage> {
         : clothes.length;
     final bool hasMore = visibleCount < clothes.length;
 
-   
     final ButtonStyle pillStyle = OutlinedButton.styleFrom(
       shape: const StadiumBorder(),
       side: const BorderSide(color: Color(0xFFB3B3B3)),
@@ -320,10 +316,9 @@ class _RecommendationPageState extends State<RecommendationPage> {
                   ),
                   Expanded(
                     child: ScrollConfiguration(
-                      behavior: const _NoGlowScrollBehavior(), // 글로우 제거
+                      behavior: const _NoGlowScrollBehavior(),
                       child: GridView.builder(
-                        physics:
-                            const ClampingScrollPhysics(), // overscroll bounce 방지
+                        physics: const ClampingScrollPhysics(),
                         padding: const EdgeInsets.symmetric(horizontal: 12),
                         gridDelegate:
                             const SliverGridDelegateWithFixedCrossAxisCount(
@@ -332,7 +327,6 @@ class _RecommendationPageState extends State<RecommendationPage> {
                               crossAxisSpacing: 12,
                               mainAxisSpacing: 12,
                             ),
-                       
                         itemCount: visibleCount,
                         itemBuilder: (context, index) {
                           final doc = clothes[index];
@@ -428,7 +422,7 @@ class _RecommendationPageState extends State<RecommendationPage> {
                     ),
                   ),
 
-                  // 하단 버튼 영역 (hasMore 사용)
+                  // 하단 버튼 영역
                   Padding(
                     padding: const EdgeInsets.only(
                       left: 16,
@@ -472,6 +466,7 @@ class _RecommendationPageState extends State<RecommendationPage> {
   }
 }
 
+// 오버스크롤 글로우/스트레치 제거용
 class _NoGlowScrollBehavior extends ScrollBehavior {
   const _NoGlowScrollBehavior();
 
