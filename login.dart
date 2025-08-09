@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
+import '../utils/user_handle.dart';
 
 class LoginPage extends StatefulWidget {
   const LoginPage({super.key});
@@ -20,6 +21,23 @@ class _LoginPageState extends State<LoginPage> {
     super.dispose();
   }
 
+  /// users/{handle} 문서에 upsert
+  Future<void> _upsertUserDoc(User user, {required bool isNew}) async {
+    final email = user.email ?? '';
+    final handle = toHandle(email);
+    final doc = await userDocByHandle();
+
+    final data = <String, dynamic>{
+      'uid': user.uid,
+      'email': email,
+      'handle': handle,
+      'lastLoginAt': FieldValue.serverTimestamp(),
+      if (isNew) 'createdAt': FieldValue.serverTimestamp(),
+    };
+
+    await doc.set(data, SetOptions(merge: true));
+  }
+
   Future<void> _signUpAndSave() async {
     final email = emailController.text.trim();
     final password = passwordController.text.trim();
@@ -31,49 +49,52 @@ class _LoginPageState extends State<LoginPage> {
       return;
     }
 
-    String emailPrefix = email.split('@')[0]; // 이메일 앞부분 추출
-
     try {
-      // 회원가입 시도
-      User? user = (await FirebaseAuth.instance.createUserWithEmailAndPassword(
+      // 1) 신규 회원가입
+      final cred = await FirebaseAuth.instance.createUserWithEmailAndPassword(
         email: email,
         password: password,
-      )).user;
+      );
+      final user = cred.user;
 
       if (user != null) {
-        // Firestore에 저장 (이메일 앞부분만 저장)
-        await FirebaseFirestore.instance.collection('users').doc(user.uid).set({
-          'emailPrefix': emailPrefix,
-          'createdAt': FieldValue.serverTimestamp(),
-        });
-
-        // 저장 후 QuestionPage로 이동
+        await ensureHandleClaimed(); // 🔒 handles/{handle} 선점
+        await _upsertUserDoc(user, isNew: true); // users/{handle} upsert
+        if (!mounted) return;
         Navigator.pushReplacementNamed(context, '/question');
+        return;
       }
     } on FirebaseAuthException catch (e) {
-      if (e.code == 'email-already-in-use') {
-        // 이미 가입 → 로그인 시도
-        try {
-          await FirebaseAuth.instance.signInWithEmailAndPassword(
-            email: email,
-            password: password,
-          );
-
-          Navigator.pushReplacementNamed(context, '/question');
-        } catch (loginError) {
-          ScaffoldMessenger.of(context).showSnackBar(
-            SnackBar(content: Text('로그인 실패: ${loginError.toString()}')),
-          );
-        }
-      } else {
+      if (e.code != 'email-already-in-use') {
         ScaffoldMessenger.of(
           context,
         ).showSnackBar(SnackBar(content: Text('회원가입 실패: ${e.message}')));
+        return;
       }
     } catch (e) {
       ScaffoldMessenger.of(
         context,
       ).showSnackBar(SnackBar(content: Text('오류: $e')));
+      return;
+    }
+
+    // 2) 기존 계정 로그인
+    try {
+      final cred = await FirebaseAuth.instance.signInWithEmailAndPassword(
+        email: email,
+        password: password,
+      );
+      final user = cred.user;
+      if (user != null) {
+        await ensureHandleClaimed(); // 🔒 선점(이미 있으면 그대로 통과)
+        await _upsertUserDoc(user, isNew: false);
+        if (!mounted) return;
+        Navigator.pushReplacementNamed(context, '/question');
+      }
+    } catch (loginError) {
+      ScaffoldMessenger.of(
+        context,
+      ).showSnackBar(SnackBar(content: Text('로그인 실패: $loginError')));
     }
   }
 
@@ -91,7 +112,10 @@ class _LoginPageState extends State<LoginPage> {
               Container(
                 margin: const EdgeInsets.only(top: 10),
                 decoration: BoxDecoration(
-                  border: Border.all(color: Color(0xFFD9D9D9), width: 1.5),
+                  border: Border.all(
+                    color: const Color(0xFFD9D9D9),
+                    width: 1.5,
+                  ),
                   borderRadius: BorderRadius.circular(12),
                 ),
                 padding: const EdgeInsets.all(20),
