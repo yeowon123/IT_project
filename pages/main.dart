@@ -46,7 +46,7 @@ class MyApp extends StatelessWidget {
 
       initialRoute: '/',
       routes: {
-        '/': (context) => const LoginPage(), // ✅ 로그인 페이지 연결
+        '/': (context) => const LoginPage(), //  로그인 페이지 연결
         '/question': (context) => const QuestionPage(),
         '/choice': (context) => const ChoicePage(),
         '/recommendation': (context) => const RecommendationPage(),
@@ -58,7 +58,7 @@ class MyApp extends StatelessWidget {
   }
 }
 
-// ✅ 스크롤 글로우/스트레치 제거용 (프로젝트 공용으로 써도 됨)
+//  스크롤 글로우/스트레치 제거용 (프로젝트 공용으로 써도 됨)
 class _NoGlowScrollBehavior extends ScrollBehavior {
   const _NoGlowScrollBehavior();
 
