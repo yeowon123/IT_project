@@ -4,6 +4,8 @@ import 'package:url_launcher/url_launcher.dart';
 import 'package:flutter/services.dart';
 import 'dart:convert';
 import 'package:http/http.dart' as http;
+import 'package:flutter/foundation.dart'
+    show kIsWeb, defaultTargetPlatform, TargetPlatform;
 import '../models/recommendation_response.dart';
 import '../utils/user_handle.dart'; // 추가
 
@@ -15,13 +17,33 @@ class RecommendationPage extends StatefulWidget {
 }
 
 class _RecommendationPageState extends State<RecommendationPage> {
-  List<dynamic> clothes = [];
+  // ====== API 설정 ======
+  static const String _apiKey = "twenty-clothes-api-key";
+  late final String _apiUrl = "${_apiBase()}/recommend";
+
+  String _apiBase() {
+    // flutter run --dart-define=API_BASE=http://172.30.1.71:8000 로 오버라이드 가능
+    const fromDefine = String.fromEnvironment('API_BASE');
+    if (fromDefine.isNotEmpty) return fromDefine;
+
+    if (kIsWeb) return "http://localhost:8000";
+    switch (defaultTargetPlatform) {
+      case TargetPlatform.android:
+        return "http://10.0.2.2:8000"; // Android 에뮬레이터에서 호스트 접근
+      case TargetPlatform.iOS:
+        return "http://127.0.0.1:8000"; // iOS 시뮬레이터에서 호스트 접근
+      default:
+        return "http://localhost:8000";
+    }
+  }
+
+  // Firestore 문서만 담도록 타입 명확화
+  List<QueryDocumentSnapshot<Map<String, dynamic>>> clothes = [];
   int page = 0;
   static const int itemsPerPage = 8;
   bool isLoading = true;
   bool loadFailed = false;
   bool _initialized = false;
-  bool isMock = false;
 
   String category = '';
   String season = '';
@@ -29,6 +51,13 @@ class _RecommendationPageState extends State<RecommendationPage> {
   String style = '';
 
   Set<String> favoriteIds = {};
+
+  // 디버그 로그(빈 결과 시 화면에서 확인)
+  final StringBuffer _log = StringBuffer();
+  void _addLog(String msg) {
+    debugPrint(msg);
+    _log.writeln(msg);
+  }
 
   @override
   void didChangeDependencies() {
@@ -46,8 +75,7 @@ class _RecommendationPageState extends State<RecommendationPage> {
   }
 
   Future<List<String>> fetchRecommendedItemNames() async {
-    const String apiKey = "twenty-clothes-api-key";
-    final url = Uri.parse("http://172.30.1.71:8000/recommend");
+    final url = Uri.parse(_apiUrl);
 
     final Map<String, dynamic> body = {
       "user_id": "user123",
@@ -61,87 +89,157 @@ class _RecommendationPageState extends State<RecommendationPage> {
     };
 
     try {
-      final response = await http.post(
-        url,
-        headers: {'Content-Type': 'application/json', 'x-api-key': apiKey},
-        body: jsonEncode(body),
-      );
+      _addLog("[API] 요청 → $_apiUrl body=$body");
+      final t0 = DateTime.now();
+      final response = await http
+          .post(
+            url,
+            headers: {'Content-Type': 'application/json', 'x-api-key': _apiKey},
+            body: jsonEncode(body),
+          )
+          .timeout(const Duration(seconds: 10));
+      final ms = DateTime.now().difference(t0).inMilliseconds;
+      _addLog("[API] 응답 status=${response.statusCode}, ${ms}ms");
 
       if (response.statusCode == 200) {
         final decoded = jsonDecode(response.body);
         final dto = RecommendationResponse.fromJson(decoded);
+        _addLog(
+          "[API] 추천 개수=${dto.recommendations.length}, 상위10=${dto.recommendations.take(10).toList()}",
+        );
         return dto.recommendations;
       } else {
+        _addLog("[API] 실패 status=${response.statusCode} body=${response.body}");
         return [];
       }
-    } catch (_) {
+    } catch (e) {
+      _addLog("[API] 예외: $e");
       return [];
     }
+  }
+
+  // 카테고리 → 서브컬렉션명 매핑
+  String _subCollectionOf(String category) {
+    switch (category) {
+      case '상의':
+        return 'tops';
+      case '하의':
+        return 'bottoms';
+      // 필요 시 확장:
+      // case '아우터': return 'outers';
+      // case '원피스': return 'onepiece';
+      default:
+        return '';
+    }
+  }
+
+  // whereIn 10개 제한을 고려해 청크 분할, name/title 양쪽 조회 후 dedupe
+  Future<List<QueryDocumentSnapshot<Map<String, dynamic>>>> _queryByNamesBoth(
+    String subCollection,
+    List<String> names,
+  ) async {
+    const int chunkSize = 10;
+    final List<QueryDocumentSnapshot<Map<String, dynamic>>> acc = [];
+
+    for (int i = 0; i < names.length; i += chunkSize) {
+      final chunk = names.sublist(
+        i,
+        (i + chunkSize) > names.length ? names.length : (i + chunkSize),
+      );
+
+      // name in (...)
+      final snap1 = await FirebaseFirestore.instance
+          .collectionGroup(subCollection)
+          .where('name', whereIn: chunk)
+          .get();
+
+      // title in (...)
+      final snap2 = await FirebaseFirestore.instance
+          .collectionGroup(subCollection)
+          .where('title', whereIn: chunk)
+          .get();
+
+      acc.addAll(snap1.docs);
+      acc.addAll(snap2.docs);
+    }
+
+    // 중복 제거 (문서 경로 기준)
+    final seen = <String>{};
+    final deduped = <QueryDocumentSnapshot<Map<String, dynamic>>>[];
+    for (final d in acc) {
+      final path = d.reference.path;
+      if (seen.add(path)) deduped.add(d);
+    }
+    _addLog("[FS] '${subCollection}' 조회 결과(중복 제거 후): ${deduped.length}건");
+    return deduped;
   }
 
   void fetchClothes() async {
     setState(() {
       isLoading = true;
       loadFailed = false;
-      isMock = false;
       page = 0;
+      _log.clear();
     });
 
     try {
       final recommendedNames = await fetchRecommendedItemNames();
-      final subCollection = category == '상의'
-          ? 'tops'
-          : category == '하의'
-          ? 'bottoms'
-          : '';
+
+      final subCollection = _subCollectionOf(category);
+      _addLog("[FS] 카테고리='$category' → sub='$subCollection'");
 
       if (recommendedNames.isEmpty || subCollection.isEmpty) {
-        showMockItems();
+        _addLog("[FS] 추천이 비었거나 subCollection이 비어 있음 → 표시할 아이템 없음");
+        if (!mounted) return;
+        setState(() {
+          clothes = [];
+          isLoading = false;
+          loadFailed = false; // 결과 없음 상태
+        });
         return;
       }
 
-      final querySnapshot = await FirebaseFirestore.instance
-          .collectionGroup(subCollection)
-          .where('name', whereIn: recommendedNames)
-          .get();
-
-      if (querySnapshot.docs.isEmpty) {
-        showMockItems();
-        return;
-      }
-
-      setState(() {
-        clothes = querySnapshot.docs;
-        isMock = false;
-        isLoading = false;
-      });
-    } catch (_) {
+      final docs = await _queryByNamesBoth(subCollection, recommendedNames);
       if (!mounted) return;
+
+      // 추천 이름 순서대로 정렬
+      String norm(String s) => s.trim().toLowerCase();
+      final order = <String, int>{};
+      for (int i = 0; i < recommendedNames.length; i++) {
+        order[norm(recommendedNames[i])] = i;
+      }
+
+      docs.sort((a, b) {
+        final am = a.data();
+        final bm = b.data();
+        final an = norm((am['name'] ?? am['title'] ?? '') as String? ?? '');
+        final bn = norm((bm['name'] ?? bm['title'] ?? '') as String? ?? '');
+        final ai = order[an] ?? 999999;
+        final bi = order[bn] ?? 999999;
+        return ai.compareTo(bi);
+      });
+
+      setState(() {
+        clothes = docs;
+        isLoading = false;
+        loadFailed = false;
+      });
+
+      if (docs.isEmpty) {
+        _addLog("[FS] 0건 → 필드명 불일치/값 오탈자/규칙/문서 미존재 가능성");
+      }
+    } catch (e) {
+      if (!mounted) return;
+      _addLog("[FS] 예외: $e");
       setState(() {
         isLoading = false;
-        loadFailed = true;
+        loadFailed = true; // 네트워크/쿼리 실패
       });
     }
   }
 
-  void showMockItems() {
-    final mockItems = List.generate(12, (i) {
-      return {
-        'title': '예시 옷 ${i + 1}',
-        'image': 'https://via.placeholder.com/100x100?text=Mock+${i + 1}',
-        'link': 'https://example.com/mock${i + 1}',
-      };
-    });
-
-    setState(() {
-      clothes = mockItems;
-      isMock = true;
-      isLoading = false;
-      page = 0;
-    });
-  }
-
   Future<void> _launchURL(String url) async {
+    if (url.isEmpty) return;
     final uri = Uri.parse(url);
     if (await canLaunchUrl(uri)) {
       await launchUrl(uri);
@@ -156,34 +254,18 @@ class _RecommendationPageState extends State<RecommendationPage> {
   // 즐겨찾기 수집
   List<Map<String, dynamic>> _collectFavoriteItems() {
     final List<Map<String, dynamic>> result = [];
-    for (int i = 0; i < clothes.length; i++) {
-      final doc = clothes[i];
-      String id;
-      String title = '';
-      String image = '';
-      String link = '';
-
-      if (doc is QueryDocumentSnapshot) {
-        id = doc.id;
-        final data = doc.data() as Map<String, dynamic>;
-        title = data['title'] ?? '';
-        image = data['image'] ?? '';
-        link = data['link'] ?? '';
-      } else if (doc is Map<String, dynamic>) {
-        id = 'mock-$i';
-        title = doc['title'] ?? '';
-        image = doc['image'] ?? '';
-        link = doc['link'] ?? '';
-      } else {
-        continue;
-      }
-
+    for (final doc in clothes) {
+      final data = doc.data();
+      final id = doc.id;
+      final title = (data['title'] ?? data['name'] ?? '') as String? ?? '';
+      final image = (data['image'] ?? '') as String? ?? '';
+      final link = (data['link'] ?? '') as String? ?? '';
       if (favoriteIds.contains(id)) {
         result.add({
           'title': title,
           'image': image,
           'link': link,
-          'category': category, // 카테고리도 함께 저장
+          'category': category,
           'savedAt': FieldValue.serverTimestamp(),
         });
       }
@@ -196,9 +278,9 @@ class _RecommendationPageState extends State<RecommendationPage> {
     final items = _collectFavoriteItems();
     if (items.isEmpty) {
       if (!mounted) return;
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('선택된 즐겨찾기가 없어요. ⭐를 눌러 선택해 주세요.')),
-      );
+      ScaffoldMessenger.of(
+        context,
+      ).showSnackBar(const SnackBar(content: Text('선택된 즐겨찾기가 없어요.')));
       return;
     }
 
@@ -219,9 +301,36 @@ class _RecommendationPageState extends State<RecommendationPage> {
       );
     } catch (_) {
       if (!mounted) return;
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('즐겨찾기 저장에 실패했어요. 잠시 후 다시 시도해 주세요.')),
-      );
+      ScaffoldMessenger.of(
+        context,
+      ).showSnackBar(const SnackBar(content: Text('즐겨찾기 저장에 실패했어요.')));
+    }
+  }
+
+  // API 네트워크 간단 점검
+  Future<void> _pingApi() async {
+    try {
+      final res = await http
+          .post(
+            Uri.parse(_apiUrl),
+            headers: {'Content-Type': 'application/json', 'x-api-key': _apiKey},
+            body: jsonEncode({
+              "user_id": "ping",
+              "user_input": {
+                "style": "",
+                "category": "",
+                "season": "",
+                "situation": "",
+              },
+              "favorites": [],
+            }),
+          )
+          .timeout(const Duration(seconds: 5));
+      _addLog("[PING] status=${res.statusCode}");
+      setState(() {});
+    } catch (e) {
+      _addLog("[PING] error=$e");
+      setState(() {});
     }
   }
 
@@ -293,6 +402,49 @@ class _RecommendationPageState extends State<RecommendationPage> {
                   child: const Text('다시 시도'),
                 ),
               )
+            : clothes.isEmpty
+            ? Padding(
+                padding: const EdgeInsets.all(16.0),
+                child: Column(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    const Text('추천 결과가 없어요.'),
+                    const SizedBox(height: 12),
+                    OutlinedButton(
+                      onPressed: fetchClothes,
+                      style: pillStyle,
+                      child: const Text('다시 시도'),
+                    ),
+                    const SizedBox(height: 24),
+                    ExpansionTile(
+                      title: const Text('진단 정보 보기'),
+                      children: [
+                        Container(
+                          width: double.infinity,
+                          padding: const EdgeInsets.all(12),
+                          color: const Color(0xFFF7F7F7),
+                          child: SingleChildScrollView(
+                            scrollDirection: Axis.vertical,
+                            child: SelectableText(_log.toString()),
+                          ),
+                        ),
+                        const SizedBox(height: 8),
+                        Row(
+                          mainAxisAlignment: MainAxisAlignment.center,
+                          children: [
+                            OutlinedButton(
+                              onPressed: _pingApi,
+                              style: pillStyle,
+                              child: const Text('API 핑'),
+                            ),
+                          ],
+                        ),
+                        const SizedBox(height: 12),
+                      ],
+                    ),
+                  ],
+                ),
+              )
             : Column(
                 children: [
                   const Divider(
@@ -330,24 +482,16 @@ class _RecommendationPageState extends State<RecommendationPage> {
                         itemCount: visibleCount,
                         itemBuilder: (context, index) {
                           final doc = clothes[index];
+                          final data = doc.data();
 
-                          String imageUrl = '';
-                          String title = '';
-                          String link = '';
-                          String id = '';
-
-                          if (doc is QueryDocumentSnapshot) {
-                            final item = doc.data() as Map<String, dynamic>;
-                            imageUrl = item['image'] ?? '';
-                            title = item['title'] ?? '옷 이름';
-                            link = item['link'] ?? '';
-                            id = doc.id;
-                          } else if (doc is Map<String, dynamic>) {
-                            imageUrl = doc['image'] ?? '';
-                            title = doc['title'] ?? '옷 이름';
-                            link = doc['link'] ?? '';
-                            id = 'mock-$index';
-                          }
+                          final String imageUrl =
+                              (data['image'] ?? '') as String? ?? '';
+                          final String title =
+                              (data['title'] ?? data['name'] ?? '옷 이름')
+                                  as String;
+                          final String link =
+                              (data['link'] ?? '') as String? ?? '';
+                          final String id = doc.id;
 
                           return Column(
                             crossAxisAlignment: CrossAxisAlignment.start,
@@ -374,7 +518,7 @@ class _RecommendationPageState extends State<RecommendationPage> {
                                   ),
                                   Positioned(
                                     top: 0,
-                                    left: -15,
+                                    left: -15, // 필요시 오른쪽으로 변경 가능
                                     child: IconButton(
                                       icon: Icon(
                                         favoriteIds.contains(id)
