@@ -6,7 +6,7 @@ import 'pages/choice_page.dart';
 import 'pages/question_page.dart';
 import 'pages/recommendation_page.dart';
 import 'pages/stylist_page.dart';
-import 'pages/login_page.dart'; // ✅ Firebase 로그인 페이지 import
+import 'pages/login_page.dart'; //  Firebase 로그인 페이지 import
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
