@@ -85,10 +85,12 @@
 
 ---
 
-## 🙌 팀 소개 및 개발 방식
+## 🙌 팀원 소개
 
-본 프로젝트는 **대학생 팀 프로젝트**로, 교내 대회를 위해 기획자, 개발자, 디자이너가 협업하여 개발 중입니다.  
-**외부 기여는 받지 않으며**, 팀원 간 역할을 나누어 개발하고 있습니다.
+| Yeowon Kim | Dawon Hwang | Chaewon Yoo | Jinseo Lee | Jaein Lee |
+|-----------|-----------|------------|-----------|------------|
+| - Lead    <br> - Backend <br> - AI | - Backend <br> - AI | - Backend <br> - AI | - Frontend | - Frontend |
+
 
 ---
 
