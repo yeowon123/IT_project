@@ -76,7 +76,7 @@
 
 | Yeowon Kim | Dawon Hwang | Chaewon Yoo | Jinseo Lee | Jaein Lee |
 |------------|-------------|-------------|------------|-----------|
-| ![여원](image/여원.png) | ![다원](image/다원.png) | ![채원](image/채원.png) | ![진서](image/진서.png) | ![재인](image/재인.png) |
+| ![여원](image/여원.png) | ![다원](image/다원1.png) | ![채원](image/채원.png) | ![진서](image/진서.png) | ![재인](image/재인.png) |
 | - Lead    <br> - Backend <br> - AI | - Backend <br> - AI | - Backend <br> - AI | - Frontend | - Frontend |
 
 
