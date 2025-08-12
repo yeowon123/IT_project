@@ -3,3 +3,6 @@
 
 # 임베딩 결과 폴더 전체 제외
 embeddings_by_style/
+
+#json파일
+*.json
