@@ -15,7 +15,7 @@
 
 ## 🤖 핵심기능
 **1. 사용자 맞춤 코디 추천 시스템**: 
-사용자는 스타일(style), 카테고리(category), 계절(season), **상황(situation)**을 입력하여, 자신의 상황에 맞는 옷 추천을 받을 수 있습니다.
+사용자는 스타일(style), 카테고리(category), 계절(season), 상황(situation)을 입력하여, 자신의 상황에 맞는 옷 추천을 받을 수 있습니다.
 
 입력된 조건을 기반으로 Sentence-transformer 모델을 활용한 문장 임베딩을 수행하고, 상품명 벡터 간 문맥 유사도 분석을 통해 가장 어울리는 옷 10벌을 추천합니다.
 
@@ -35,24 +35,19 @@
 
 ### 🐍 언어 
 ![Python](https://img.shields.io/badge/Python-3776AB?style=for-the-badge&logo=python&logoColor=white)
-
 ### 📚 프레임워크 / 라이브러리
 ![FastAPI](https://img.shields.io/badge/FastAPI-009688?style=for-the-badge&logo=fastapi&logoColor=white)
 ![Pydantic](https://img.shields.io/badge/Pydantic-E92063?style=for-the-badge&logo=pydantic&logoColor=white)
 ![SentenceTransformers](https://img.shields.io/badge/SentenceTransformers-1A73E8?style=for-the-badge&logo=semanticweb&logoColor=white)
 ![NumPy](https://img.shields.io/badge/NumPy-013243?style=for-the-badge&logo=numpy&logoColor=white)
 ![Joblib](https://img.shields.io/badge/Joblib-FF9900?style=for-the-badge&logo=python&logoColor=white)
-
 ### ☁️ 데이터베이스 / 백엔드 서비스
 ![Firebase](https://img.shields.io/badge/Firebase-FFCA28?style=for-the-badge&logo=firebase&logoColor=black)
 ![Google Cloud](https://img.shields.io/badge/Google%20Cloud-4285F4?style=for-the-badge&logo=googlecloud&logoColor=white)
-
 ### 🔌 API
 ![Naver API](https://img.shields.io/badge/Naver%20API-03C75A?style=for-the-badge&logo=naver&logoColor=green)
-
 ### 💻 개발 도구
 ![VS Code](https://img.shields.io/badge/VS%20Code-007ACC?style=for-the-badge&logo=visualstudiocode&logoColor=white)
-
 ### 🤝 버전 관리 / 협업
 ![GitHub](https://img.shields.io/badge/GitHub-181717?style=for-the-badge&logo=github&logoColor=white)
 
