@@ -58,7 +58,7 @@ class _LoginPageState extends State<LoginPage> {
       final user = cred.user;
 
       if (user != null) {
-        await ensureHandleClaimed(); // 🔒 handles/{handle} 선점
+        await ensureHandleClaimed(); //  handles/{handle} 선점
         await _upsertUserDoc(user, isNew: true); // users/{handle} upsert
         if (!mounted) return;
         Navigator.pushReplacementNamed(context, '/question');
@@ -86,7 +86,7 @@ class _LoginPageState extends State<LoginPage> {
       );
       final user = cred.user;
       if (user != null) {
-        await ensureHandleClaimed(); // 🔒 선점(이미 있으면 그대로 통과)
+        await ensureHandleClaimed(); //  선점(이미 있으면 그대로 통과)
         await _upsertUserDoc(user, isNew: false);
         if (!mounted) return;
         Navigator.pushReplacementNamed(context, '/question');
