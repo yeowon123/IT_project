@@ -6,7 +6,7 @@
 ## 🧥 서비스 개요
 기존 스타일 추천 서비스는 출근룩, 데이트룩 등 일반적인 TPO 중심으로 구성되어 있어,  
 **대학생들의 다양한 생활 패턴(시험, 팀플, 엠티 등)**을 반영하지 못합니다.  
-본 프로젝트는 **날씨와 TPO(상황)**를 고려하여, **여대생만의 라이프스타일에 맞는 코디를 추천**하는 시스템을 개발하고자 합니다.
+본 프로젝트는 **계절, 상황, 스타일**을 고려하여, **여대생만의 라이프스타일에 맞는 코디를 추천**하는 시스템을 개발하고자 합니다.
 
 이 서비스를 통해 대학생들은 **실용적이면서도 자신만의 스타일을 표현**할 수 있으며,  
 코디 추천과 함께 스타일 데이터를 체계적으로 기록, 관리할 수 있습니다.
@@ -35,19 +35,24 @@
 
 ### 🐍 언어 
 ![Python](https://img.shields.io/badge/Python-3776AB?style=for-the-badge&logo=python&logoColor=white)
+
 ### 📚 프레임워크 / 라이브러리
 ![FastAPI](https://img.shields.io/badge/FastAPI-009688?style=for-the-badge&logo=fastapi&logoColor=white)
 ![Pydantic](https://img.shields.io/badge/Pydantic-E92063?style=for-the-badge&logo=pydantic&logoColor=white)
 ![SentenceTransformers](https://img.shields.io/badge/SentenceTransformers-1A73E8?style=for-the-badge&logo=semanticweb&logoColor=white)
 ![NumPy](https://img.shields.io/badge/NumPy-013243?style=for-the-badge&logo=numpy&logoColor=white)
 ![Joblib](https://img.shields.io/badge/Joblib-FF9900?style=for-the-badge&logo=python&logoColor=white)
+
 ### ☁️ 데이터베이스 / 백엔드 서비스
 ![Firebase](https://img.shields.io/badge/Firebase-FFCA28?style=for-the-badge&logo=firebase&logoColor=black)
 ![Google Cloud](https://img.shields.io/badge/Google%20Cloud-4285F4?style=for-the-badge&logo=googlecloud&logoColor=white)
+
 ### 🔌 API
 ![Naver API](https://img.shields.io/badge/Naver%20API-03C75A?style=for-the-badge&logo=naver&logoColor=green)
+
 ### 💻 개발 도구
 ![VS Code](https://img.shields.io/badge/VS%20Code-007ACC?style=for-the-badge&logo=visualstudiocode&logoColor=white)
+
 ### 🤝 버전 관리 / 협업
 ![GitHub](https://img.shields.io/badge/GitHub-181717?style=for-the-badge&logo=github&logoColor=white)
 
