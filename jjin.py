@@ -12,7 +12,7 @@ from firebase_admin import credentials, firestore
 
 # === 초기 설정
 API_KEY = "twenty-clothes-api-key"
-cred = credentials.Certificate("XXXXXXXX")  
+cred = credentials.Certificate("xxxxx")  
 firebase_admin.initialize_app(cred)
 db = firestore.client()
 app = FastAPI()
