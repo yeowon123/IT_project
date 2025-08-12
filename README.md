@@ -32,7 +32,7 @@
 | 프론트엔드 | Flutter |
 | 백엔드 | Python + FastAPI / Flask |
 | DB | Firebase (Firestore) |
-| AI/추천 로직 | CNN 모델 (TensorFlow/PyTorch), Rule-based + Content-based + KNN |
+| AI/추천 로직 | 자연어 임베딩 기반 추천 (SentenceTransformer), 콘텐츠 기반 필터링 (Content-Based Filtering), 하이브리드 추천 |
 | 디자인 도구 | Figma, Canva (선택) |
 
 ---
