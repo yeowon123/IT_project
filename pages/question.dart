@@ -1,3 +1,4 @@
+// lib/pages/question_page.dart
 import 'package:flutter/material.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import '../utils/user_handle.dart';
@@ -50,8 +51,8 @@ class _QuestionPageState extends State<QuestionPage> {
   Future<void> _prefillFromFirestore() async {
     setState(() => _loadingPrefill = true);
     try {
-      final doc = await userDocByHandle();
-      final snap = await doc.get();
+      final docRef = userDocRef(); // ✅ 항상 handle 기반
+      final snap = await docRef.get();
       final data = snap.data();
       if (data == null) return;
 
@@ -62,7 +63,7 @@ class _QuestionPageState extends State<QuestionPage> {
         if (s2 != null && situations.contains(s2)) selectedSituation = s2;
       });
     } catch (_) {
-      // 필요시 스낵바 등 처리
+      // 필요 시 스낵바 등 추가
     } finally {
       if (mounted) setState(() => _loadingPrefill = false);
     }
@@ -73,9 +74,8 @@ class _QuestionPageState extends State<QuestionPage> {
 
     setState(() => _saving = true);
     try {
-      final doc = await userDocByHandle();
-      // season/situation 병합 저장 (users/{handle})
-      await doc.set({
+      // ✅ users/{handle}에 병합 저장
+      await userDocRef().set({
         'season': selectedSeason,
         'situation': selectedSituation,
         'updatedAt': FieldValue.serverTimestamp(),
