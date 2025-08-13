@@ -34,6 +34,28 @@
 
 ---
 
+## ✨ 기능 동작 사진
+<p style="text-align: center;">
+  <img src="images/안드로이드 앱.png" width="500"><br>
+  <b>1. 안드로이드 앱</b>
+</p>
+<p style="text-align: center;">
+  <img src="images/로그인.png" width="500"><br>
+  <b>2. 로그인(자동 회원가입)</b>
+</p>
+<p style="text-align: center;">
+  <img src="images/계절, 상황 선택.png" width="500"><br>
+  <b>3. 계절, 상황 선택</b>
+</p>
+<p style="text-align: center;">
+  <img src="images/스타일 선택.png" width="500"><br>
+  <b>4. 스타일 선택</b>
+</p>
+
+
+
+---
+
 ## 🛠️ 기술 스택
 
 ### 🐍 언어 
