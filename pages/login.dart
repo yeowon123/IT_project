@@ -1,3 +1,4 @@
+// lib/pages/login.dart (또는 login_page.dart)
 import 'package:flutter/material.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
@@ -21,21 +22,16 @@ class _LoginPageState extends State<LoginPage> {
     super.dispose();
   }
 
-  /// users/{handle} 문서에 upsert
-  Future<void> _upsertUserDoc(User user, {required bool isNew}) async {
-    final email = user.email ?? '';
-    final handle = toHandle(email);
-    final doc = await userDocByHandle();
-
-    final data = <String, dynamic>{
-      'uid': user.uid,
-      'email': email,
-      'handle': handle,
-      'lastLoginAt': FieldValue.serverTimestamp(),
-      if (isNew) 'createdAt': FieldValue.serverTimestamp(),
-    };
-
-    await doc.set(data, SetOptions(merge: true));
+  /// 인증 성공 후 공통 처리: handles 선점 + users/{handle} 업서트 + (신규시 createdAt) + healthcheck
+  Future<void> _postAuthSetup({required bool isNew}) async {
+    await ensureHandleClaimed(); // 🔒 handles/{handle} 선점
+    await upsertUserRootDoc(); // ✅ users/{handle} upsert (uid, email, handle, lastLoginAt)
+    if (isNew) {
+      // 신규일 경우 createdAt만 추가 기록
+      await userDocRef().set({
+        'createdAt': FieldValue.serverTimestamp(),
+      }, SetOptions(merge: true));
+    }
   }
 
   Future<void> _signUpAndSave() async {
@@ -49,28 +45,27 @@ class _LoginPageState extends State<LoginPage> {
       return;
     }
 
+    // 1) 신규 회원가입 시도
     try {
-      // 1) 신규 회원가입
       final cred = await FirebaseAuth.instance.createUserWithEmailAndPassword(
         email: email,
         password: password,
       );
-      final user = cred.user;
-
-      if (user != null) {
-        await ensureHandleClaimed(); // 🔒 handles/{handle} 선점
-        await _upsertUserDoc(user, isNew: true); // users/{handle} upsert
+      if (cred.user != null) {
+        await _postAuthSetup(isNew: true);
         if (!mounted) return;
         Navigator.pushReplacementNamed(context, '/question');
         return;
       }
     } on FirebaseAuthException catch (e) {
+      // 기존 계정이면 로그인으로 폴백
       if (e.code != 'email-already-in-use') {
         ScaffoldMessenger.of(
           context,
         ).showSnackBar(SnackBar(content: Text('회원가입 실패: ${e.message}')));
         return;
       }
+      // else: 아래에서 로그인 시도
     } catch (e) {
       ScaffoldMessenger.of(
         context,
@@ -84,17 +79,19 @@ class _LoginPageState extends State<LoginPage> {
         email: email,
         password: password,
       );
-      final user = cred.user;
-      if (user != null) {
-        await ensureHandleClaimed(); // 🔒 선점(이미 있으면 그대로 통과)
-        await _upsertUserDoc(user, isNew: false);
+      if (cred.user != null) {
+        await _postAuthSetup(isNew: false);
         if (!mounted) return;
         Navigator.pushReplacementNamed(context, '/question');
       }
-    } catch (loginError) {
+    } on FirebaseAuthException catch (e) {
       ScaffoldMessenger.of(
         context,
-      ).showSnackBar(SnackBar(content: Text('로그인 실패: $loginError')));
+      ).showSnackBar(SnackBar(content: Text('로그인 실패: ${e.message}')));
+    } catch (e) {
+      ScaffoldMessenger.of(
+        context,
+      ).showSnackBar(SnackBar(content: Text('로그인 실패: $e')));
     }
   }
 
@@ -133,6 +130,7 @@ class _LoginPageState extends State<LoginPage> {
                     const SizedBox(height: 6),
                     TextField(
                       controller: emailController,
+                      keyboardType: TextInputType.emailAddress,
                       decoration: _buildInputDecoration('Enter your Email'),
                     ),
                     const SizedBox(height: 16),
