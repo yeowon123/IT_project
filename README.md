@@ -87,10 +87,10 @@
   </tr>
   <tr>
     <td style="width: 50%; border: 1px solid #ccc;">
-      <img src="image/1.png" style="max-width:95%;"><br>
+      <img src="image/다양한옷추천.png" style="max-width:95%;"><br>
     </td>
     <td style="width: 50%; border: 1px solid #ccc;">
-      <img src="image/1.png" style="max-width:95%;"><br>
+      <img src="image/즐겨찾기저장.png" style="max-width:95%;"><br>
     </td>
   </tr>
   <tr>
@@ -106,7 +106,7 @@
       <img src="image/마이페이지_즐겨찾기.png" style="max-width:95%;"><br>
     </td>
     <td style="width: 50%; border: 1px solid #ccc;">
-      <img src="image/추천.png" style="max-width:95%;"><br>
+      <img src="image/즐겨찾기기반추천시스템.png" style="max-width:95%;"><br>
     </td>
   </tr>
   <tr>
