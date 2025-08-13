@@ -597,8 +597,11 @@ class _RecommendationPageState extends State<RecommendationPage> {
     }
 
     final cleaned = uri.replace(queryParameters: {});
-    final out = cleaned.toString();
-    return out.endsWith('?') ? out.substring(0, out.length - 1) : out;
+    if (cleaned.toString().endsWith('?')) {
+      final s2 = cleaned.toString();
+      return s2.substring(0, s2.length - 1);
+    }
+    return cleaned.toString();
   }
 
   bool _isSmartstore(String u) =>
@@ -725,9 +728,9 @@ class _RecommendationPageState extends State<RecommendationPage> {
   }
 
   Future<void> _saveFavorites() async {
-    final items = _collectFavoriteItems();
-    const snackBg = Color(0xFFB3B3B3); // ✅ 요청 색상
+    const snackBg = Color.fromARGB(255, 255, 248, 248); // ✅ 요청 색상
 
+    final items = _collectFavoriteItems();
     if (items.isEmpty) {
       if (!mounted) return;
       ScaffoldMessenger.of(context).showSnackBar(
@@ -744,28 +747,56 @@ class _RecommendationPageState extends State<RecommendationPage> {
 
     try {
       final col = favoritesCol(); // ✅ users/{handle}/favorites
-
       final batch = FirebaseFirestore.instance.batch();
       for (final item in items) {
         final String rawId = (item['id'] as String?) ?? '';
         final String docId = _favDocId(rawId);
-        // 중복 방지: 같은 아이템이면 덮어쓰기(merge)
         batch.set(col.doc(docId), item, SetOptions(merge: true));
       }
       await batch.commit();
 
       if (!mounted) return;
+
+      // ✅ 커스텀 SnackBar: 텍스트 아래로, OutlinedButton(pill) 포함
+      final btnStyle = OutlinedButton.styleFrom(
+        shape: const StadiumBorder(),
+        side: const BorderSide(
+          color: Color.fromARGB(255, 172, 169, 169),
+        ), // 버튼 테두리 색 = 창 색
+        foregroundColor: Colors.black,
+        padding: const EdgeInsets.symmetric(horizontal: 18, vertical: 10),
+      );
+
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
-          backgroundColor: snackBg, // ✅ 전체 창 배경색
-          content: const Text(
-            '즐겨찾기를 저장했어요.',
-            style: TextStyle(color: Colors.black),
+          backgroundColor: snackBg,
+          behavior: SnackBarBehavior.floating,
+          duration: const Duration(seconds: 6),
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(12),
           ),
-          action: SnackBarAction(
-            label: '즐겨찾기 보기',
-            onPressed: () => Navigator.pushNamed(context, '/stylist'),
-            textColor: Colors.black, // ✅ 액션 텍스트도 어둡게
+          margin: const EdgeInsets.all(16),
+          content: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              const SizedBox(height: 8), // 텍스트를 아래로 내리기 위한 상단 여백
+              const Text(
+                '즐겨찾기를 저장했어요',
+                style: TextStyle(
+                  color: Colors.black,
+                  fontWeight: FontWeight.w600,
+                ),
+              ),
+              const SizedBox(height: 10),
+              OutlinedButton(
+                style: btnStyle,
+                onPressed: () {
+                  ScaffoldMessenger.of(context).hideCurrentSnackBar();
+                  Navigator.pushNamed(context, '/stylist');
+                },
+                child: const Text('즐겨찾기 보기'),
+              ),
+            ],
           ),
         ),
       );
