@@ -8,20 +8,14 @@ class ChoicePage extends StatefulWidget {
 }
 
 class _ChoicePageState extends State<ChoicePage> {
-  // ★ 선택된 한글 카테고리 ('상의' | '하의' | '원피스')
   String? selectedCategory;
-
-  // ★ 전달받은 값들을 state에 보관
+  late String email; // 추가됨
   late String name;
   late String season;
   late String situation;
   String? style;
-
-  // ★ 사용자 이모지 추가
   String? userEmoji;
 
-  // ====== [카테고리 창 관련: 매핑표 시작] =====================================
-  // ★ 카테고리 매핑표 (API / Firestore)
   static const Map<String, String> _apiCategoryMap = {
     '상의': 'top',
     '하의': 'bottom',
@@ -32,7 +26,6 @@ class _ChoicePageState extends State<ChoicePage> {
     '하의': 'bottoms',
     '원피스': 'setup',
   };
-  // ====== [카테고리 창 관련: 매핑표 끝] =======================================
 
   bool get _isLovely {
     final s = (style ?? '').trim().toLowerCase();
@@ -43,18 +36,16 @@ class _ChoicePageState extends State<ChoicePage> {
   void didChangeDependencies() {
     super.didChangeDependencies();
     final args =
-        (ModalRoute.of(context)?.settings.arguments as Map<String, String?>?) ??
-        {};
+        (ModalRoute.of(context)?.settings.arguments as Map<String, String?>?) ?? {};
+    email = args['email'] ?? '';
     name = args['name'] ?? '';
     season = args['season'] ?? '';
     situation = args['situation'] ?? '';
     style = args['style'];
-    userEmoji = args['userEmoji']; // 이모지 받기
+    userEmoji = args['userEmoji'];
   }
 
-  // ====== [카테고리 창 관련: 다이얼로그 UI 시작] ===============================
   void _showCategoryDialog(BuildContext context) {
-    // ★ 러블리일 때만 '원피스' 포함
     final options = _isLovely ? ['상의', '하의', '원피스'] : ['상의', '하의'];
 
     showDialog(
@@ -68,7 +59,6 @@ class _ChoicePageState extends State<ChoicePage> {
           child: Column(
             mainAxisSize: MainAxisSize.min,
             children: [
-              // 헤더
               Row(
                 mainAxisAlignment: MainAxisAlignment.spaceBetween,
                 children: [
@@ -83,7 +73,6 @@ class _ChoicePageState extends State<ChoicePage> {
                 ],
               ),
               const SizedBox(height: 20),
-              // 카테고리 버튼들
               Wrap(
                 spacing: 12,
                 children: options.map((category) {
@@ -94,7 +83,7 @@ class _ChoicePageState extends State<ChoicePage> {
                         selectedCategory = category;
                       });
                       Navigator.pop(context);
-                      _navigateToRecommendation(); // 선택 후 이동
+                      _navigateToRecommendation();
                     },
                     style: ElevatedButton.styleFrom(
                       backgroundColor: isSelected
@@ -120,9 +109,7 @@ class _ChoicePageState extends State<ChoicePage> {
       ),
     );
   }
-  // ====== [카테고리 창 관련: 다이얼로그 UI 끝] =================================
 
-  // ====== [카테고리 창 관련: 선택 후 이동 로직 시작] ==========================
   void _navigateToRecommendation() {
     if (selectedCategory == null) {
       ScaffoldMessenger.of(
@@ -131,7 +118,6 @@ class _ChoicePageState extends State<ChoicePage> {
       return;
     }
 
-    // ★ 러블리 외 스타일에서 ‘원피스’가 선택되지 않도록 2중 방어
     if (!_isLovely && selectedCategory == '원피스') {
       ScaffoldMessenger.of(
         context,
@@ -139,7 +125,6 @@ class _ChoicePageState extends State<ChoicePage> {
       return;
     }
 
-    // ★ API/FS 모두 코드값으로 변환해 함께 전달
     final categoryKr = selectedCategory!;
     final categoryApi = _apiCategoryMap[categoryKr] ?? 'top';
     final categoryFs = _fsCategoryMap[categoryKr] ?? 'tops';
@@ -151,16 +136,12 @@ class _ChoicePageState extends State<ChoicePage> {
         'season': season,
         'situation': situation,
         'style': style ?? '',
-        // 서버 호출용
-        'categoryApi': categoryApi, // top | bottom | onepiece
-        // Firestore 조회용
-        'categoryFs': categoryFs, // tops | bottoms | setup
-        // 표시용
-        'categoryKr': categoryKr, // 상의 | 하의 | 원피스
+        'categoryApi': categoryApi,
+        'categoryFs': categoryFs,
+        'categoryKr': categoryKr,
       },
     );
   }
-  // ====== [카테고리 창 관련: 선택 후 이동 로직 끝] ============================
 
   @override
   Widget build(BuildContext context) {
@@ -176,17 +157,17 @@ class _ChoicePageState extends State<ChoicePage> {
           ),
         ),
         centerTitle: true,
-        title: Image.asset('assets/logo_4.png', width: 60), // 크기 키움
+        title: Image.asset('assets/logo_4.png', width: 60),
       ),
       drawer: Drawer(
         child: ListView(
           padding: EdgeInsets.zero,
           children: [
             const DrawerHeader(
-              decoration: BoxDecoration(color: Colors.teal),
+              decoration: BoxDecoration(color: Colors.white),
               child: Text(
-                '메뉴',
-                style: TextStyle(color: Colors.white, fontSize: 24),
+                '마이페이지',
+                style: TextStyle(color: Colors.black, fontSize: 24),
               ),
             ),
             ListTile(
@@ -194,6 +175,16 @@ class _ChoicePageState extends State<ChoicePage> {
               title: const Text('내 정보'),
               onTap: () {
                 Navigator.pop(context);
+                Navigator.pushNamed(
+                  context,
+                  '/profile',
+                  arguments: {
+                    'email': email,
+                    'season': season,
+                    'situation': situation,
+                    'style': style ?? '',
+                  },
+                );
               },
             ),
             ListTile(
@@ -220,11 +211,11 @@ class _ChoicePageState extends State<ChoicePage> {
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.center,
             children: [
-              const SizedBox(height: 4), // 구분선 위로 올림
+              const SizedBox(height: 4),
               const Divider(thickness: 1.5, color: Color(0xFFE0E0E0)),
               const SizedBox(height: 20),
               Text(
-                '${userEmoji ?? ''} $name', // 이모지 + 이름 표시
+                '${userEmoji ?? ''} $name',
                 style: const TextStyle(
                   fontSize: 20,
                   fontWeight: FontWeight.bold,
@@ -239,8 +230,6 @@ class _ChoicePageState extends State<ChoicePage> {
                 buildInfoBox('스타일', style ?? ''),
               ],
               const SizedBox(height: 30),
-
-              // ====== [카테고리 창 관련: 트리거 버튼 시작] ======================
               ElevatedButton(
                 onPressed: () => _showCategoryDialog(context),
                 style: ElevatedButton.styleFrom(
@@ -256,11 +245,9 @@ class _ChoicePageState extends State<ChoicePage> {
                 ),
                 child: const Text(
                   'Search',
-                  // foregroundColor가 흰색이지만, 텍스트는 디자인대로 검정 유지
                   style: TextStyle(fontSize: 16, color: Colors.black),
                 ),
               ),
-              // ====== [카테고리 창 관련: 트리거 버튼 끝] ========================
             ],
           ),
         ),
