@@ -71,10 +71,10 @@
   </tr>
   <tr>
     <td style="width: 50%; border: 1px solid #ccc;">
-      <img src="image/선택 결과 확인.png" style="max-width:95%;"><br>
+      <img src="image/선택결과확인.png" style="max-width:95%;"><br>
     </td>
     <td style="width: 50%; border: 1px solid #ccc;">
-      <img src="image/다양한 옷 추천.png" style="max-width:95%;"><br>
+      <img src="image/의류카테고리.png" style="max-width:95%;"><br>
     </td>
   </tr>
   <tr>
@@ -82,28 +82,28 @@
       <b>5. 선택 결과 확인</b>
     </td>
     <td style="padding: 8px; border: 1px solid #ccc;">
-      <b>6. 다양한 옷 추천</b>
+      <b>6. 원하는 의류 카테고리 선택</b>
     </td>
   </tr>
   <tr>
     <td style="width: 50%; border: 1px solid #ccc;">
-      <img src="image/즐겨찾기 저장.png" style="max-width:95%;"><br>
+      <img src="image/1.png" style="max-width:95%;"><br>
     </td>
     <td style="width: 50%; border: 1px solid #ccc;">
-      <img src="image/마이페이지에서 즐겨찾기 확인 가능.png" style="max-width:95%;"><br>
+      <img src="image/1.png" style="max-width:95%;"><br>
     </td>
   </tr>
   <tr>
     <td style="padding: 8px; border: 1px solid #ccc;">
-      <b>7. 즐겨찾기 저장</b>
+      <b>7. 다양한 옷 추천</b>
     </td>
     <td style="padding: 8px; border: 1px solid #ccc;">
-      <b>8. 마이페이지에서 즐겨찾기 확인 가능</b>
+      <b>8. 즐겨찾기 저장</b>
     </td>
   </tr>
   <tr>
     <td style="width: 50%; border: 1px solid #ccc;">
-      <img src="image/상의 하의 원피스 선택.png" style="max-width:95%;"><br>
+      <img src="image/마이페이지_즐겨찾기.png" style="max-width:95%;"><br>
     </td>
     <td style="width: 50%; border: 1px solid #ccc;">
       <img src="image/추천.png" style="max-width:95%;"><br>
@@ -111,7 +111,7 @@
   </tr>
   <tr>
     <td style="padding: 8px; border: 1px solid #ccc;">
-      <b>9. 상의 하의 원피스 선택</b>
+      <b>9. 마이페이지에서 즐겨찾기 확인 가능</b>
     </td>
     <td style="padding: 8px; border: 1px solid #ccc;">
       <b>10. 즐겨찾기 기반 추천 시스템</b>
