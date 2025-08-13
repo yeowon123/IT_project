@@ -1,4 +1,3 @@
-// lib/pages/question_page.dart
 import 'package:flutter/material.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import '../utils/user_handle.dart';
@@ -51,19 +50,15 @@ class _QuestionPageState extends State<QuestionPage> {
   Future<void> _prefillFromFirestore() async {
     setState(() => _loadingPrefill = true);
     try {
-      final docRef = userDocRef(); // ✅ 항상 handle 기반
-      final snap = await docRef.get();
+      final snap = await userDocRef().get();
       final data = snap.data();
       if (data == null) return;
-
       setState(() {
         final s1 = data['season'] as String?;
         final s2 = data['situation'] as String?;
         if (s1 != null && seasons.contains(s1)) selectedSeason = s1;
         if (s2 != null && situations.contains(s2)) selectedSituation = s2;
       });
-    } catch (_) {
-      // 필요 시 스낵바 등 추가
     } finally {
       if (mounted) setState(() => _loadingPrefill = false);
     }
@@ -74,7 +69,6 @@ class _QuestionPageState extends State<QuestionPage> {
 
     setState(() => _saving = true);
     try {
-      // ✅ users/{handle}에 병합 저장
       await userDocRef().set({
         'season': selectedSeason,
         'situation': selectedSituation,
@@ -108,7 +102,10 @@ class _QuestionPageState extends State<QuestionPage> {
   @override
   Widget build(BuildContext context) {
     final nextEnabled =
-        selectedSeason != null && selectedSituation != null && !_saving;
+        selectedSeason != null &&
+        selectedSituation != null &&
+        !_saving &&
+        !_loadingPrefill; // ★ 변경: 프리필 로딩 중에는 Next 비활성화
 
     return Scaffold(
       backgroundColor: Colors.white,
@@ -123,8 +120,6 @@ class _QuestionPageState extends State<QuestionPage> {
                   const SizedBox(height: 100),
                   Center(child: Image.asset('assets/logo_2.png', width: 300)),
                   const SizedBox(height: 100),
-
-                  // 계절
                   Opacity(
                     opacity: _loadingPrefill ? 0.5 : 1,
                     child: IgnorePointer(
@@ -139,8 +134,6 @@ class _QuestionPageState extends State<QuestionPage> {
                     ),
                   ),
                   const SizedBox(height: 100),
-
-                  // 상황
                   Opacity(
                     opacity: _loadingPrefill ? 0.5 : 1,
                     child: IgnorePointer(
@@ -157,8 +150,6 @@ class _QuestionPageState extends State<QuestionPage> {
                 ],
               ),
             ),
-
-            // Next 버튼
             Positioned(
               bottom: 24,
               right: 24,
