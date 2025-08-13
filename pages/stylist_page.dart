@@ -1,13 +1,13 @@
 import 'package:flutter/material.dart';
 
-class FavoritesScreen extends StatefulWidget {
-  const FavoritesScreen({Key? key}) : super(key: key);
+class StylistPage extends StatefulWidget {
+  const StylistPage({Key? key}) : super(key: key);
 
   @override
-  State<FavoritesScreen> createState() => _FavoritesScreenState();
+  State<StylistPage> createState() => _StylistPageState();
 }
 
-class _FavoritesScreenState extends State<FavoritesScreen> {
+class _StylistPageState extends State<StylistPage> {
   final List<Map<String, dynamic>> tops = List.generate(
     8,
     (i) => {
