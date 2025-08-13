@@ -1,7 +1,8 @@
-// lib/pages/stylist_page.dart
 import 'package:flutter/material.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
-import '../utils/user_handle.dart'; // ✅ favoritesCol() 사용
+import 'package:url_launcher/url_launcher.dart';
+import 'package:http/http.dart' as http;
+import '../utils/user_handle.dart'; // favoritesCol()
 
 class StylistPage extends StatefulWidget {
   const StylistPage({Key? key}) : super(key: key);
@@ -11,7 +12,9 @@ class StylistPage extends StatefulWidget {
 }
 
 class _StylistPageState extends State<StylistPage> {
-  // 선택 상태는 문서 ID 기준으로 보관(스트림 리빌드에도 안전)
+  // RecommendationPage와 동일한 동작을 위해 유지
+  static const bool kAltForSmartstoreInEmulator = true;
+
   String? selectedTopDocId;
   String? selectedBottomDocId;
 
@@ -27,23 +30,159 @@ class _StylistPageState extends State<StylistPage> {
     });
   }
 
-  // 카테고리별 즐겨찾기 실시간 스트림
-  Stream<QuerySnapshot<Map<String, dynamic>>> _favStream(String categoryKr) {
-    // 저장 시 'category' 필드에 한글(상의/하의/원피스)을 넣었으므로 그대로 필터
-    return favoritesCol().where('category', isEqualTo: categoryKr).snapshots();
-    // 필요시 정렬: .orderBy('savedAt', descending: true) (모든 문서가 필드를 갖는지 확인 후 사용)
+  // ===== URL 열기 (RecommendationPage와 동일 동작) =====
+  String _normalizeUrl(String url) {
+    var s = url.replaceAll(RegExp(r'[\u200B-\u200D\uFEFF]'), '').trim();
+    if (s.isEmpty) return s;
+
+    if (s.startsWith('//')) s = 'https:$s';
+    if (!s.startsWith('http://') && !s.startsWith('https://')) s = 'https://$s';
+
+    Uri uri;
+    try {
+      uri = Uri.parse(s);
+    } catch (_) {
+      return s;
+    }
+
+    if (uri.host.contains('shopping.naver.com')) {
+      final door = uri.queryParameters['url'] ?? uri.queryParameters['u'];
+      if (door != null && door.isNotEmpty) {
+        try {
+          return _normalizeUrl(Uri.decodeFull(door));
+        } catch (_) {
+          return door;
+        }
+      }
+    }
+
+    if (uri.scheme == 'http') {
+      uri = uri.replace(scheme: 'https');
+    }
+
+    if (uri.host.endsWith('smartstore.naver.com')) {
+      final m = RegExp(r'/products/(\d+)').firstMatch(uri.path);
+      String? pid = m?.group(1);
+
+      if (pid == null) {
+        for (final key in ['productNo', 'itemId', 'pdpNo', 'prdNo']) {
+          final v = uri.queryParameters[key];
+          if (v != null && RegExp(r'^\d+$').hasMatch(v)) {
+            pid = v;
+            break;
+          }
+        }
+      }
+
+      if (pid != null && pid.isNotEmpty) {
+        return 'https://m.smartstore.naver.com/products/$pid';
+      }
+
+      return Uri(
+        scheme: 'https',
+        host: 'm.smartstore.naver.com',
+        path: uri.path,
+      ).toString();
+    }
+
+    final cleaned = uri.replace(queryParameters: {});
+    final out = cleaned.toString();
+    return out.endsWith('?') ? out.substring(0, out.length - 1) : out;
   }
 
-  // 도큐먼트를 안전한 Map으로 변환
+  bool _isSmartstore(String u) =>
+      Uri.tryParse(u)?.host.endsWith('smartstore.naver.com') ?? false;
+
+  String? _extractSmartstorePid(String u) {
+    final m1 = RegExp(r'/products/(\d+)').firstMatch(u);
+    if (m1 != null) return m1.group(1);
+    final m2 = RegExp(
+      r'[?&](productNo|itemId|pdpNo|prdNo)=(\d+)',
+    ).firstMatch(u);
+    return m2?.group(2);
+  }
+
+  Future<bool> _openExternal(Uri u) async {
+    try {
+      return await launchUrl(u, mode: LaunchMode.externalApplication);
+    } catch (_) {
+      return false;
+    }
+  }
+
+  Future<bool> _blockedByNaver(Uri u) async {
+    try {
+      final r = await http.get(u).timeout(const Duration(seconds: 3));
+      final t = r.body;
+      return t.contains('접속이 일시적으로 제한') || t.contains('현재 서비스 접속이 불가합니다');
+    } catch (_) {
+      return false;
+    }
+  }
+
+  Future<void> _launchURL(String raw) async {
+    final normalized = _normalizeUrl(raw);
+
+    if (normalized.isEmpty) {
+      if (!mounted) return;
+      ScaffoldMessenger.of(
+        context,
+      ).showSnackBar(const SnackBar(content: Text('링크가 없어요.')));
+      return;
+    }
+
+    final uri = Uri.tryParse(normalized);
+    if (uri == null) {
+      if (!mounted) return;
+      ScaffoldMessenger.of(
+        context,
+      ).showSnackBar(const SnackBar(content: Text('잘못된 링크 형식이에요.')));
+      return;
+    }
+
+    // 스마트스토어 대안 경로 (에뮬레이터/차단 시)
+    if (_isSmartstore(normalized)) {
+      final pid = _extractSmartstorePid(normalized);
+      if (pid != null) {
+        if (kAltForSmartstoreInEmulator) {
+          final alt = Uri.parse(
+            'https://msearch.shopping.naver.com/product/$pid',
+          );
+          if (await _openExternal(alt)) return;
+        }
+        if (await _blockedByNaver(uri)) {
+          final alt = Uri.parse(
+            'https://msearch.shopping.naver.com/product/$pid',
+          );
+          if (await _openExternal(alt)) return;
+        }
+      }
+    }
+
+    final ok = await _openExternal(uri);
+    if (!ok && mounted) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('링크를 열 수 없습니다. 다른 네트워크에서 다시 시도해 주세요.')),
+      );
+    }
+  }
+  // ===== URL 열기 끝 =====
+
+  // ✅ 인덱스 없이: orderBy 제거 (카테고리로만 필터) → 클라이언트 정렬
+  Stream<QuerySnapshot<Map<String, dynamic>>> _favStream(String categoryKr) {
+    return favoritesCol().where('category', isEqualTo: categoryKr).snapshots();
+  }
+
   Map<String, dynamic> _toItemMap(DocumentSnapshot<Map<String, dynamic>> doc) {
     final data = doc.data() ?? {};
     return {
-      'docId': doc.id, // 문서 ID (선택 상태 비교용)
+      'docId': doc.id,
       'title': (data['title'] ?? data['name'] ?? '').toString(),
       'image': (data['image'] ?? '').toString(),
       'link': (data['link'] ?? '').toString(),
-      'category': (data['category'] ?? '').toString(), // 상의/하의/원피스
-      'id': (data['id'] ?? '').toString(), // 원본 아이템 ID
+      'category': (data['category'] ?? '').toString(),
+      'id': (data['id'] ?? '').toString(),
+      'savedAt': data['savedAt'],
     };
   }
 
@@ -77,7 +216,16 @@ class _StylistPageState extends State<StylistPage> {
           );
         }
 
-        final docs = snap.data?.docs ?? [];
+        // 최신순 정렬 (클라이언트)
+        final docs = (snap.data?.docs ?? []).toList();
+        docs.sort((a, b) {
+          final ta = (a.data()['savedAt'] as Timestamp?);
+          final tb = (b.data()['savedAt'] as Timestamp?);
+          final va = ta?.toDate().millisecondsSinceEpoch ?? 0;
+          final vb = tb?.toDate().millisecondsSinceEpoch ?? 0;
+          return vb.compareTo(va);
+        });
+
         if (docs.isEmpty) {
           return Padding(
             padding: const EdgeInsets.only(bottom: 32),
@@ -135,6 +283,7 @@ class _StylistPageState extends State<StylistPage> {
                   itemBuilder: (_, idx) {
                     final item = items[idx];
                     final docId = item['docId'] as String;
+                    final link = (item['link'] as String?) ?? '';
 
                     final isSelected = (categoryKr == '상의'
                         ? selectedTopDocId == docId
@@ -152,7 +301,6 @@ class _StylistPageState extends State<StylistPage> {
                             selectedBottomDocId = docId;
                             selectedBottom = item;
                           }
-                          // 원피스는 프리뷰에 합성하지 않으므로 선택 상태만 별도 관리하지 않음
                         });
                       },
                       child: Container(
@@ -167,6 +315,7 @@ class _StylistPageState extends State<StylistPage> {
                         child: Column(
                           mainAxisAlignment: MainAxisAlignment.center,
                           children: [
+                            // 썸네일
                             Container(
                               width: 60,
                               height: 60,
@@ -197,24 +346,21 @@ class _StylistPageState extends State<StylistPage> {
                               ),
                             ),
                             const SizedBox(height: 12),
-                            Text(
-                              item["title"] as String? ?? '',
-                              style: const TextStyle(
-                                fontWeight: FontWeight.bold,
-                                fontSize: 14,
+                            // ✅ 상품명 클릭 → 링크 열기 (링크 텍스트는 표시하지 않음)
+                            InkWell(
+                              onTap: () => _launchURL(link),
+                              child: Text(
+                                item["title"] as String? ?? '',
+                                style: const TextStyle(
+                                  fontWeight: FontWeight.bold,
+                                  fontSize: 14,
+                                  decoration: TextDecoration.underline,
+                                ),
+                                overflow: TextOverflow.ellipsis,
+                                maxLines: 1,
                               ),
-                              overflow: TextOverflow.ellipsis,
-                              maxLines: 1,
                             ),
-                            Text(
-                              item["link"] as String? ?? '',
-                              style: const TextStyle(
-                                fontSize: 12,
-                                color: Colors.blue,
-                              ),
-                              overflow: TextOverflow.ellipsis,
-                              maxLines: 1,
-                            ),
+                            // 링크 텍스트는 제거했습니다.
                           ],
                         ),
                       ),
@@ -280,11 +426,9 @@ class _StylistPageState extends State<StylistPage> {
         padding: EdgeInsets.zero,
         children: [
           const SizedBox(height: 16),
-          // ✅ Firestore에서 실시간으로 가져오는 섹션 3개
           sectionStream('상의', '상의'),
           sectionStream('하의', '하의'),
           sectionStream('원피스', '원피스'),
-
           const Padding(
             padding: EdgeInsets.symmetric(horizontal: 16, vertical: 8),
             child: Text(
