@@ -36,25 +36,33 @@
 
 ## ✨ 기능 동작 사진
 
-<div style="text-align: center;">
-  <img src="image/android_app.jpg" width="500"><br>
-  <b>1. 안드로이드 앱</b>
-</div>
+<table>
+  <tr>
+    <td align="center" width="50%">
+      <img src="images/android_app.png" width="95%"><br>
+      <b>1. 안드로이드 앱</b>
+      <div><sub>앱 실행 후 첫 화면에서 서비스 소개와 시작 버튼을 확인할 수 있습니다.</sub></div>
+    </td>
+    <td align="center" width="50%">
+      <img src="images/login.png" width="95%"><br>
+      <b>2. 로그인(자동 회원가입)</b>
+      <div><sub>이메일 입력 시 자동 회원가입 후 즉시 로그인됩니다.</sub></div>
+    </td>
+  </tr>
+  <tr>
+    <td align="center" width="50%">
+      <img src="images/season_situation.png" width="95%"><br>
+      <b>3. 계절, 상황 선택</b>
+      <div><sub>계절·상황을 선택하면 추천候補가 필터링됩니다.</sub></div>
+    </td>
+    <td align="center" width="50%">
+      <img src="images/style_select.png" width="95%"><br>
+      <b>4. 스타일 선택</b>
+      <div><sub>스타일을 고르면 규칙/컨텍스트 기반 추천이 생성됩니다.</sub></div>
+    </td>
+  </tr>
+</table>
 
-<div style="text-align: center;">
-  <img src="image/login.jpg" width="500"><br>
-  <b>2. 로그인(자동 회원가입)</b>
-</div>
-
-<div style="text-align: center;">
-  <img src="image/season_situation.jpg" width="500"><br>
-  <b>3. 계절, 상황 선택</b>
-</div>
-
-<div style="text-align: center;">
-  <img src="image/style_select.jpg" width="500"><br>
-  <b>4. 스타일 선택</b>
-</div>
 
 ---
 
