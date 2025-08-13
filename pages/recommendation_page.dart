@@ -18,7 +18,6 @@ class RecommendationPage extends StatefulWidget {
 
 class _RecommendationPageState extends State<RecommendationPage> {
   // ====== 에뮬레이터 개발용: 스마트스토어면 바로 msearch로 열기 ======
-  // 필요 없으면 false로 바꾸면 됩니다.
   static const bool kAltForSmartstoreInEmulator = true;
 
   // ====== API 설정 ======
@@ -29,7 +28,6 @@ class _RecommendationPageState extends State<RecommendationPage> {
   late final String _apiUrl = "${_apiBase()}/recommend";
 
   String _apiBase() {
-    // flutter run --dart-define=API_BASE=http://172.30.1.2:8000 로 덮어쓰기 가능
     const fromDefine = String.fromEnvironment('API_BASE');
     if (fromDefine.isNotEmpty) return fromDefine;
 
@@ -52,10 +50,14 @@ class _RecommendationPageState extends State<RecommendationPage> {
   bool loadFailed = false;
   bool _initialized = false;
 
-  String category = '';
+  String category = ''; // 한글 표기: 상의/하의/원피스
   String season = '';
   String situation = '';
   String style = '';
+
+  // ★ 추가: API/Firestore용 코드 분리(호환형)
+  String categoryApiCode = ''; // tops | bottoms | setup (혹은 서버 요구값)
+  String categoryFsSub = ''; // tops | bottoms | setup
 
   Set<String> favoriteIds = {};
 
@@ -72,10 +74,25 @@ class _RecommendationPageState extends State<RecommendationPage> {
     if (!_initialized) {
       final args =
           ModalRoute.of(context)!.settings.arguments as Map<String, String?>;
+
       category = args['category'] ?? '';
       season = args['season'] ?? '';
       situation = args['situation'] ?? '';
       style = args['style'] ?? '';
+
+      // ★ 라우트 인자에 새 키가 오면 사용, 없으면 한글 category로부터 유도
+      categoryApiCode = (args['categoryApi'] ?? '').trim();
+      categoryFsSub = (args['categoryFs'] ?? '').trim();
+      if (categoryApiCode.isEmpty) {
+        categoryApiCode = _toApiCategory(category);
+      }
+      if (categoryFsSub.isEmpty) {
+        categoryFsSub = _subCollectionOf(category);
+      }
+
+      _addLog("[CFG] style=$style, category(kr)=$category");
+      _addLog("[CFG] derived → api=$categoryApiCode, fs=$categoryFsSub");
+
       fetchClothes();
       _initialized = true;
     }
@@ -133,7 +150,7 @@ class _RecommendationPageState extends State<RecommendationPage> {
     final email = FirebaseAuth.instance.currentUser?.email ?? "guest@local";
 
     final apiStyle = _toApiStyle(style);
-    final apiCategory = _toApiCategory(category);
+    final apiCategory = categoryApiCode; // ★ 고정 사용
     final apiSeason = _toApiSeason(season);
     final apiSituation = _toApiSituation(situation);
 
@@ -216,7 +233,7 @@ class _RecommendationPageState extends State<RecommendationPage> {
       case '세트':
         return 'setup';
       case '원피스':
-        return 'onepiece'; // 프로젝트에 있으면 사용
+        return 'setup'; // ★ FIX: onepiece → setup (DB와 일치)
       default:
         return '';
     }
@@ -284,7 +301,7 @@ class _RecommendationPageState extends State<RecommendationPage> {
 
     try {
       final api = await _fetchFromApi();
-      final sub = _subCollectionOf(category);
+      final sub = categoryFsSub; // ★ FIX: 유도/전달된 FS 서브컬렉션 사용
       _addLog("[FS] 카테고리='$category' → sub='$sub'");
 
       // 1) 서버가 객체 배열을 주면 그대로 표시
@@ -370,11 +387,9 @@ class _RecommendationPageState extends State<RecommendationPage> {
 
   // ===== URL 열기 보조 =====
   String _normalizeUrl(String url) {
-    // 1) 보이지 않는 문자 제거 + 공백 정리
     var s = url.replaceAll(RegExp(r'[\u200B-\u200D\uFEFF]'), '').trim();
     if (s.isEmpty) return s;
 
-    // 2) 프로토콜 보정
     if (s.startsWith('//')) s = 'https:$s';
     if (!s.startsWith('http://') && !s.startsWith('https://')) s = 'https://$s';
 
@@ -385,7 +400,6 @@ class _RecommendationPageState extends State<RecommendationPage> {
       return s;
     }
 
-    // 3) shopping.naver.com (dooropen/outlink) → 실제 URL 복원
     if (uri.host.contains('shopping.naver.com')) {
       final door = uri.queryParameters['url'] ?? uri.queryParameters['u'];
       if (door != null && door.isNotEmpty) {
@@ -397,18 +411,14 @@ class _RecommendationPageState extends State<RecommendationPage> {
       }
     }
 
-    // 4) http → https
     if (uri.scheme == 'http') {
       uri = uri.replace(scheme: 'https');
     }
 
-    // 5) 스마트스토어: 모바일 정규형으로 고정 (쿼리/해시 제거)
     if (uri.host.endsWith('smartstore.naver.com')) {
-      // 경로에서 products/{id} 추출
       final m = RegExp(r'/products/(\d+)').firstMatch(uri.path);
       String? pid = m?.group(1);
 
-      // 못 찾으면 쿼리에서 후보 키 검색
       if (pid == null) {
         for (final key in ['productNo', 'itemId', 'pdpNo', 'prdNo']) {
           final v = uri.queryParameters[key];
@@ -423,7 +433,6 @@ class _RecommendationPageState extends State<RecommendationPage> {
         return 'https://m.smartstore.naver.com/products/$pid';
       }
 
-      // 그래도 못 찾으면 모바일 도메인만 유지
       return Uri(
         scheme: 'https',
         host: 'm.smartstore.naver.com',
@@ -431,13 +440,11 @@ class _RecommendationPageState extends State<RecommendationPage> {
       ).toString();
     }
 
-    // 6) 기타: 트래킹 파라미터 제거 및 뒤에 '?' 방지
     final cleaned = uri.replace(queryParameters: {});
     final out = cleaned.toString();
     return out.endsWith('?') ? out.substring(0, out.length - 1) : out;
   }
 
-  // ====== (추가) 헬퍼 ======
   bool _isSmartstore(String u) =>
       Uri.tryParse(u)?.host.endsWith('smartstore.naver.com') ?? false;
 
@@ -450,14 +457,13 @@ class _RecommendationPageState extends State<RecommendationPage> {
     return m2?.group(2);
   }
 
-  // 차단 페이지 간단 감지
   Future<bool> _blockedByNaver(Uri u) async {
     try {
       final r = await http.get(u).timeout(const Duration(seconds: 3));
       final t = r.body;
       return t.contains('접속이 일시적으로 제한') || t.contains('현재 서비스 접속이 불가합니다');
     } catch (_) {
-      return false; // 네트워크 에러면 기본 링크 시도
+      return false;
     }
   }
 
@@ -469,7 +475,6 @@ class _RecommendationPageState extends State<RecommendationPage> {
     }
   }
 
-  // ====== 스마트스토어 막히면 msearch로 대체 ======
   Future<void> _launchURL(String raw) async {
     debugPrint('RAW URL >>> $raw');
     final normalized = _normalizeUrl(raw);
@@ -786,11 +791,10 @@ class _RecommendationPageState extends State<RecommendationPage> {
                                 .toString();
                           }
 
-                          // ====== 여기부터 UI 변경 ======
+                          // ====== 카드 UI ======
                           return Column(
                             crossAxisAlignment: CrossAxisAlignment.stretch,
                             children: [
-                              // 이미지 + 즐겨찾기(오버레이)
                               Padding(
                                 padding: const EdgeInsets.symmetric(
                                   horizontal: 8.0,
@@ -848,7 +852,6 @@ class _RecommendationPageState extends State<RecommendationPage> {
                                 ),
                               ),
                               const SizedBox(height: 8),
-                              // 상품명: 2줄, 가운데 정렬, … 처리
                               Padding(
                                 padding: const EdgeInsets.symmetric(
                                   horizontal: 10.0,
