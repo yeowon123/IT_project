@@ -36,44 +36,41 @@
 
 ## ✨ 기능 동작 사진
 
-<table style="border-collapse: collapse; width: 100%;">
+<table style="width: 100%; border-collapse: collapse; text-align: center;">
   <tr>
-    <!-- 1 -->
-    <td style="width: 50%; border: 1px solid #ccc; vertical-align: top;">
-      <div style="text-align: center;">
-        <img src="image/android_app.png" style="max-width:95%;"><br>
-        <div style="background-color: #f0f0f0; padding: 5px;"><b>1. 안드로이드 앱</b></div>
-        <div style="background-color: #63c7d2; color: white; padding: 8px;">앱 실행 후 첫 화면에서 서비스 소개와 시작 버튼을 확인할 수 있습니다.</div>
-      </div>
+    <td style="width: 50%; border: 1px solid #ccc;">
+      <img src="image/android_app.png" style="max-width:95%;"><br>
     </td>
-    <!-- 2 -->
-    <td style="width: 50%; border: 1px solid #ccc; vertical-align: top;">
-      <div style="text-align: center;">
-        <img src="image/login.png" style="max-width:95%;"><br>
-        <div style="background-color: #f0f0f0; padding: 5px;"><b>2. 로그인(자동 회원가입)</b></div>
-        <div style="background-color: #63c7d2; color: white; padding: 8px;">이메일 입력 시 자동 회원가입 후 즉시 로그인됩니다.</div>
-      </div>
+    <td style="width: 50%; border: 1px solid #ccc;">
+      <img src="image/login.png" style="max-width:95%;"><br>
     </td>
   </tr>
   <tr>
-    <!-- 3 -->
-    <td style="width: 50%; border: 1px solid #ccc; vertical-align: top;">
-      <div style="text-align: center;">
-        <img src="image/season_situation.png" style="max-width:95%;"><br>
-        <div style="background-color: #f0f0f0; padding: 5px;"><b>3. 계절, 상황 선택</b></div>
-        <div style="background-color: #63c7d2; color: white; padding: 8px;">계절·상황을 선택하면 추천 후보가 필터링됩니다.</div>
-      </div>
+    <td style="background-color: #63c7d2; color: white; padding: 8px; border: 1px solid #ccc;">
+      <b>1. 안드로이드 앱</b>
     </td>
-    <!-- 4 -->
-    <td style="width: 50%; border: 1px solid #ccc; vertical-align: top;">
-      <div style="text-align: center;">
-        <img src="image/style_select.png" style="max-width:95%;"><br>
-        <div style="background-color: #f0f0f0; padding: 5px;"><b>4. 스타일 선택</b></div>
-        <div style="background-color: #63c7d2; color: white; padding: 8px;">스타일을 고르면 규칙/컨텍스트 기반 추천이 생성됩니다.</div>
-      </div>
+    <td style="background-color: #63c7d2; color: white; padding: 8px; border: 1px solid #ccc;">
+      <b>2. 로그인(자동 회원가입)</b>
+    </td>
+  </tr>
+  <tr>
+    <td style="width: 50%; border: 1px solid #ccc;">
+      <img src="image/season_situation.png" style="max-width:95%;"><br>
+    </td>
+    <td style="width: 50%; border: 1px solid #ccc;">
+      <img src="image/style_select.png" style="max-width:95%;"><br>
+    </td>
+  </tr>
+  <tr>
+    <td style="background-color: #63c7d2; color: white; padding: 8px; border: 1px solid #ccc;">
+      <b>3. 계절, 상황 선택</b>
+    </td>
+    <td style="background-color: #63c7d2; color: white; padding: 8px; border: 1px solid #ccc;">
+      <b>4. 스타일 선택</b>
     </td>
   </tr>
 </table>
+
 
 
 ---
