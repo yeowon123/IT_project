@@ -46,10 +46,10 @@
     </td>
   </tr>
   <tr>
-    <td style="background-color: #63c7d2; color: white; padding: 8px; border: 1px solid #ccc;">
+    <td style="padding: 8px; border: 1px solid #ccc;">
       <b>1. 안드로이드 앱</b>
     </td>
-    <td style="background-color: #63c7d2; color: white; padding: 8px; border: 1px solid #ccc;">
+    <td style="padding: 8px; border: 1px solid #ccc;">
       <b>2. 로그인(자동 회원가입)</b>
     </td>
   </tr>
@@ -62,10 +62,10 @@
     </td>
   </tr>
   <tr>
-    <td style="background-color: #63c7d2; color: white; padding: 8px; border: 1px solid #ccc;">
+    <td style="padding: 8px; border: 1px solid #ccc;">
       <b>3. 계절, 상황 선택</b>
     </td>
-    <td style="background-color: #63c7d2; color: white; padding: 8px; border: 1px solid #ccc;">
+    <td style="padding: 8px; border: 1px solid #ccc;">
       <b>4. 스타일 선택</b>
     </td>
   </tr>
