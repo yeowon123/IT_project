@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
+import '../user_handle.dart';
 import '../utils/user_handle.dart';
 
 class QuestionPage extends StatefulWidget {
@@ -103,9 +104,9 @@ class _QuestionPageState extends State<QuestionPage> {
   Widget build(BuildContext context) {
     final nextEnabled =
         selectedSeason != null &&
-        selectedSituation != null &&
-        !_saving &&
-        !_loadingPrefill; // ★ 변경: 프리필 로딩 중에는 Next 비활성화
+            selectedSituation != null &&
+            !_saving &&
+            !_loadingPrefill; // ★ 변경: 프리필 로딩 중에는 Next 비활성화
 
     return Scaffold(
       backgroundColor: Colors.white,
@@ -166,18 +167,18 @@ class _QuestionPageState extends State<QuestionPage> {
                 ),
                 child: _saving
                     ? const SizedBox(
-                        width: 16,
-                        height: 16,
-                        child: CircularProgressIndicator(strokeWidth: 2),
-                      )
+                  width: 16,
+                  height: 16,
+                  child: CircularProgressIndicator(strokeWidth: 2),
+                )
                     : const Text(
-                        'Next',
-                        style: TextStyle(
-                          fontSize: 13,
-                          color: Colors.black,
-                          fontWeight: FontWeight.w500,
-                        ),
-                      ),
+                  'Next',
+                  style: TextStyle(
+                    fontSize: 13,
+                    color: Colors.black,
+                    fontWeight: FontWeight.w500,
+                  ),
+                ),
               ),
             ),
           ],
@@ -230,10 +231,10 @@ class _QuestionPageState extends State<QuestionPage> {
         items: items
             .map(
               (item) => DropdownMenuItem<String>(
-                value: item,
-                child: Text(item, style: const TextStyle(fontSize: 14)),
-              ),
-            )
+            value: item,
+            child: Text(item, style: const TextStyle(fontSize: 14)),
+          ),
+        )
             .toList(),
         onChanged: onChanged,
         icon: const Icon(Icons.expand_more),
