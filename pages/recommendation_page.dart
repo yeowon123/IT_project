@@ -9,6 +9,9 @@ import 'package:flutter/foundation.dart'
 import 'package:firebase_auth/firebase_auth.dart';
 import '../utils/user_handle.dart';
 
+// ▼ enum은 파일 최상단(클래스 밖)에 선언
+enum _PageMode { apiObjects, apiNamesFs, fsFallback }
+
 class RecommendationPage extends StatefulWidget {
   const RecommendationPage({super.key});
 
@@ -24,6 +27,7 @@ class _RecommendationPageState extends State<RecommendationPage> {
   static const String _apiKey = "twenty-clothes-api-key";
   static const Duration apiTimeout = Duration(seconds: 60);
   static const Duration pingTimeout = Duration(seconds: 20);
+  static const int _remotePageSize = 12; // 서버/파베 페이징 사이즈
 
   late final String _apiUrl = "${_apiBase()}/recommend";
 
@@ -44,11 +48,27 @@ class _RecommendationPageState extends State<RecommendationPage> {
 
   /// Firestore 문서 또는 서버에서 온 Map을 함께 담기 위해 dynamic 사용
   List<dynamic> clothes = [];
-  int page = 0;
-  static const int itemsPerPage = 8;
+
+  // ▶ 더보기(원격 페이징)용 상태
   bool isLoading = true;
   bool loadFailed = false;
   bool _initialized = false;
+  bool _isLoadingMore = false; // 더보기 중 여부
+  bool _hasMore = true; // 더보기 버튼 노출 여부
+
+  // 서버 페이징
+  String? _apiNextCursor;
+  int _apiNextPage = 2; // page 기반 서버일 경우, 첫 로딩 이후 2부터 시작
+
+  // Firestore 페이징 (collectionGroup)
+  QueryDocumentSnapshot<Map<String, dynamic>>? _lastFsDoc;
+
+  // 데이터 소스 모드
+  _PageMode? _mode;
+
+  // 중복 방지 세트
+  final Set<String> _seenApiIds = {}; // 서버 아이템 중복 방지(id/_id/link)
+  final Set<String> _seenFsPaths = {}; // 파베 문서 path 중복 방지
 
   String category = ''; // 한글 표기: 상의/하의/원피스
   String season = '';
@@ -75,7 +95,8 @@ class _RecommendationPageState extends State<RecommendationPage> {
       final args =
           ModalRoute.of(context)!.settings.arguments as Map<String, String?>;
 
-      category = args['category'] ?? '';
+      // ✅ 카테고리 수신: categoryKr 우선, 없으면 category, 그래도 없으면 FS 서브컬렉션 역매핑
+      category = args['categoryKr'] ?? args['category'] ?? '';
       season = args['season'] ?? '';
       situation = args['situation'] ?? '';
       style = args['style'] ?? '';
@@ -89,16 +110,32 @@ class _RecommendationPageState extends State<RecommendationPage> {
       if (categoryFsSub.isEmpty) {
         categoryFsSub = _subCollectionOf(category);
       }
+      if (category.isEmpty && categoryFsSub.isNotEmpty) {
+        category = _krFromFsSub(categoryFsSub); // ✅ 역매핑 보정
+      }
 
       _addLog("[CFG] style=$style, category(kr)=$category");
       _addLog("[CFG] derived → api=$categoryApiCode, fs=$categoryFsSub");
 
-      fetchClothes();
+      fetchClothes(); // 최초 페이지
       _initialized = true;
     }
   }
 
-  // ===== 한국어 → 서버 enum(영어) 변환 =====
+  // ===== 한국어 ↔ 매핑 =====
+  String _krFromFsSub(String s) {
+    switch (s) {
+      case 'tops':
+        return '상의';
+      case 'bottoms':
+        return '하의';
+      case 'setup':
+        return '원피스';
+      default:
+        return '';
+    }
+  }
+
   String _toApiStyle(String s) {
     final base = s.split('/').first.trim();
     const map = {
@@ -145,7 +182,11 @@ class _RecommendationPageState extends State<RecommendationPage> {
   }
 
   // ===== API 결과 파싱 (문자열 배열/객체 배열 모두 지원) =====
-  Future<Map<String, dynamic>> _fetchFromApi() async {
+  Future<Map<String, dynamic>> _fetchFromApi({
+    String? cursor,
+    int? page,
+    int? limit,
+  }) async {
     final url = Uri.parse(_apiUrl);
     final email = FirebaseAuth.instance.currentUser?.email ?? "guest@local";
 
@@ -164,12 +205,16 @@ class _RecommendationPageState extends State<RecommendationPage> {
         "situation": apiSituation,
       },
       "favorites": [],
+      if (limit != null) "limit": limit,
+      if (cursor != null) "cursor": cursor,
+      if (page != null) "page": page,
     };
 
     try {
       _addLog("[CFG] API_BASE = ${_apiBase()}");
       _addLog(
-        "[API] 요청 → $_apiUrl style=$apiStyle, category=$apiCategory, season=$apiSeason, situation=$apiSituation",
+        "[API] 요청 → $_apiUrl style=$apiStyle, category=$apiCategory, season=$apiSeason, situation=$apiSituation"
+        " | limit=$limit cursor=$cursor page=$page",
       );
 
       final t0 = DateTime.now();
@@ -185,10 +230,26 @@ class _RecommendationPageState extends State<RecommendationPage> {
 
       if (res.statusCode != 200 || res.body.isEmpty) {
         _addLog("[API] 실패 status=${res.statusCode} body=${res.body}");
-        return {"names": <String>[], "items": <Map<String, dynamic>>[]};
+        return {
+          "names": <String>[],
+          "items": <Map<String, dynamic>>[],
+          "nextCursor": null,
+        };
       }
 
       final decoded = jsonDecode(res.body);
+
+      // next_cursor를 여러 위치에서 탐색
+      String? nextCursor;
+      if (decoded is Map) {
+        nextCursor =
+            (decoded["next_cursor"] ??
+                    (decoded["meta"] is Map
+                        ? decoded["meta"]["next_cursor"]
+                        : null))
+                ?.toString();
+      }
+
       final payload = (decoded is Map && decoded.containsKey("recommendations"))
           ? decoded["recommendations"]
           : decoded;
@@ -196,8 +257,12 @@ class _RecommendationPageState extends State<RecommendationPage> {
       if (payload is List && payload.isNotEmpty) {
         if (payload.first is String) {
           final names = List<String>.from(payload);
-          _addLog("[API] 문자열 추천 ${names.length}개");
-          return {"names": names, "items": <Map<String, dynamic>>[]};
+          _addLog("[API] 문자열 추천 ${names.length}개 | nextCursor=$nextCursor");
+          return {
+            "names": names,
+            "items": <Map<String, dynamic>>[],
+            "nextCursor": nextCursor,
+          };
         }
         if (payload.first is Map) {
           final items = payload
@@ -209,16 +274,28 @@ class _RecommendationPageState extends State<RecommendationPage> {
             m["image"] = (m["image"] ?? "").toString();
             m["link"] = (m["link"] ?? "").toString();
           }
-          _addLog("[API] 객체 추천 ${items.length}개");
-          return {"names": <String>[], "items": items};
+          _addLog("[API] 객체 추천 ${items.length}개 | nextCursor=$nextCursor");
+          return {
+            "names": <String>[],
+            "items": items,
+            "nextCursor": nextCursor,
+          };
         }
       }
 
       _addLog("[API] 추천 0개 또는 알 수 없는 스키마");
-      return {"names": <String>[], "items": <Map<String, dynamic>>[]};
+      return {
+        "names": <String>[],
+        "items": <Map<String, dynamic>>[],
+        "nextCursor": null,
+      };
     } catch (e) {
       _addLog("[API] 예외: $e");
-      return {"names": <String>[], "items": <Map<String, dynamic>>[]};
+      return {
+        "names": <String>[],
+        "items": <Map<String, dynamic>>[],
+        "nextCursor": null,
+      };
     }
   }
 
@@ -233,7 +310,7 @@ class _RecommendationPageState extends State<RecommendationPage> {
       case '세트':
         return 'setup';
       case '원피스':
-        return 'setup'; // ★ FIX: onepiece → setup (DB와 일치)
+        return 'setup'; // ★ onepiece → setup (DB와 일치)
       default:
         return '';
     }
@@ -277,100 +354,110 @@ class _RecommendationPageState extends State<RecommendationPage> {
     return deduped;
   }
 
-  // ===== Firestore Fallback =====
-  Future<List<QueryDocumentSnapshot<Map<String, dynamic>>>> _fallbackFromFS(
+  // ===== Firestore 페이징 (documentId 순) =====
+  Future<List<QueryDocumentSnapshot<Map<String, dynamic>>>> _fetchFsPage(
     String subCollection, {
-    int limit = 12,
+    int limit = _remotePageSize,
+    bool next = false,
   }) async {
-    final snap = await FirebaseFirestore.instance
+    if (subCollection.isEmpty) return [];
+    Query<Map<String, dynamic>> q = FirebaseFirestore.instance
         .collectionGroup(subCollection)
-        .limit(limit)
-        .get();
-    _addLog("[FS/Fallback] '$subCollection'에서 대체 ${snap.docs.length}건 로드");
+        .orderBy(FieldPath.documentId)
+        .limit(limit);
+
+    if (next && _lastFsDoc != null) {
+      q = q.startAfterDocument(_lastFsDoc!);
+    }
+
+    final snap = await q.get();
+    if (snap.docs.isNotEmpty) {
+      _lastFsDoc = snap.docs.last;
+    }
+    _addLog(
+      "[FS/PAGE] '$subCollection' page(${next ? 'next' : 'first'}) → ${snap.docs.length}건",
+    );
     return snap.docs;
   }
 
-  // ===== 메인 로더 =====
+  // ===== 메인 로더(첫 페이지) =====
   Future<void> fetchClothes() async {
     setState(() {
       isLoading = true;
       loadFailed = false;
-      page = 0;
+      _isLoadingMore = false;
+      _hasMore = true;
+      _apiNextCursor = null;
+      _apiNextPage = 2;
+      _lastFsDoc = null;
+      _mode = null;
+      clothes = [];
+      _seenApiIds.clear();
+      _seenFsPaths.clear();
       _log.clear();
     });
 
     try {
-      final api = await _fetchFromApi();
-      final sub = categoryFsSub; // ★ FIX: 유도/전달된 FS 서브컬렉션 사용
+      final api = await _fetchFromApi(limit: _remotePageSize);
+      final sub = categoryFsSub; // ★ 유도/전달된 FS 서브컬렉션 사용
       _addLog("[FS] 카테고리='$category' → sub='$sub'");
 
-      // 1) 서버가 객체 배열을 주면 그대로 표시
+      // 1) 서버가 객체 배열을 주면 그대로 표시하고, nextCursor/page로 이어서 받기
       final serverItems = (api["items"] is List)
           ? List<Map<String, dynamic>>.from(api["items"])
           : <Map<String, dynamic>>[];
       if (serverItems.isNotEmpty) {
-        if (!mounted) return;
-        for (var i = 0; i < serverItems.length; i++) {
-          serverItems[i]["_id"] = serverItems[i]["id"]?.toString() ?? "api-$i";
+        _appendApiItems(serverItems);
+        _apiNextCursor = (api["nextCursor"] as String?);
+        _mode = _PageMode.apiObjects;
+        _hasMore =
+            _apiNextCursor != null || serverItems.length >= _remotePageSize;
+
+        if (mounted) {
+          setState(() {
+            isLoading = false;
+            loadFailed = false;
+          });
         }
-        setState(() {
-          clothes = serverItems;
-          isLoading = false;
-          loadFailed = false;
-        });
         return;
       }
 
-      // 2) 문자열 이름 배열이면 파베 매칭
+      // 2) 문자열 이름 배열이면 파베 매칭(첫 페이지만). 이후 더보기는 FS 페이징으로 이어감
       final names = (api["names"] is List)
           ? List<String>.from(api["names"])
           : <String>[];
       if (names.isNotEmpty && sub.isNotEmpty) {
         final docs = await _queryByNamesBoth(sub, names);
+        _appendFsDocs(docs);
+        _mode = _PageMode.apiNamesFs;
+        _hasMore = true; // 더보기에서 FS 페이징으로 계속 이어봄
 
-        String norm(String s) => s.trim().toLowerCase();
-        final order = <String, int>{};
-        for (int i = 0; i < names.length; i++) {
-          order[norm(names[i])] = i;
-        }
-        docs.sort((a, b) {
-          final am = a.data();
-          final bm = b.data();
-          final an = norm(((am['name'] ?? am['title'] ?? '')).toString());
-          final bn = norm(((bm['name'] ?? bm['title'] ?? '')).toString());
-          final ai = order[an] ?? 999999;
-          final bi = order[bn] ?? 999999;
-          return ai.compareTo(bi);
-        });
-
-        if (!mounted) return;
-        if (docs.isNotEmpty) {
+        if (mounted) {
           setState(() {
-            clothes = docs;
             isLoading = false;
             loadFailed = false;
           });
-          return;
-        } else {
-          _addLog("[UI] 파베 매칭 0건 → Fallback 시도");
         }
-      } else {
-        _addLog("[UI] 서버 추천이 비었거나 sub 비어 있음 → Fallback 시도");
+        return;
       }
 
-      // 3) Fallback
+      // 3) Fallback: 바로 FS 페이징
       if (sub.isNotEmpty) {
-        final fallbacks = await _fallbackFromFS(sub);
-        if (!mounted) return;
-        setState(() {
-          clothes = fallbacks;
-          isLoading = false;
-          loadFailed = false;
-        });
+        final first = await _fetchFsPage(
+          sub,
+          limit: _remotePageSize,
+          next: false,
+        );
+        _appendFsDocs(first);
+        _mode = _PageMode.fsFallback;
+        _hasMore = first.length >= _remotePageSize;
       } else {
-        if (!mounted) return;
+        _mode = _PageMode.fsFallback;
+        _hasMore = false;
+      }
+
+      if (mounted) {
         setState(() {
-          clothes = [];
           isLoading = false;
           loadFailed = false;
         });
@@ -382,6 +469,75 @@ class _RecommendationPageState extends State<RecommendationPage> {
         isLoading = false;
         loadFailed = true;
       });
+    }
+  }
+
+  // ====== 더보기(다음 페이지) ======
+  Future<void> _loadMore() async {
+    if (_isLoadingMore || !_hasMore) return;
+
+    setState(() => _isLoadingMore = true);
+
+    try {
+      if (_mode == _PageMode.apiObjects) {
+        // 서버에서 계속 이어서 받기
+        final api = await _fetchFromApi(
+          limit: _remotePageSize,
+          cursor: _apiNextCursor,
+          page: _apiNextCursor == null ? _apiNextPage : null,
+        );
+        final items = (api["items"] is List)
+            ? List<Map<String, dynamic>>.from(api["items"])
+            : <Map<String, dynamic>>[];
+
+        _appendApiItems(items);
+        // nextCursor 갱신 (없으면 page++ 시도)
+        final nextCur = (api["nextCursor"] as String?);
+        if (nextCur != null && nextCur.isNotEmpty) {
+          _apiNextCursor = nextCur;
+        } else {
+          _apiNextCursor = null;
+          _apiNextPage += 1;
+        }
+        _hasMore =
+            (nextCur != null && nextCur.isNotEmpty) ||
+            items.length >= _remotePageSize;
+      } else {
+        // 이름 기반/직접 FS 페이징
+        final sub = categoryFsSub;
+        final docs = await _fetchFsPage(
+          sub,
+          limit: _remotePageSize,
+          next: true,
+        );
+        _appendFsDocs(docs);
+        _mode ??= _PageMode.fsFallback;
+        _hasMore = docs.length >= _remotePageSize;
+      }
+    } catch (e) {
+      _addLog("[LOAD_MORE] 예외: $e");
+    } finally {
+      if (mounted) setState(() => _isLoadingMore = false);
+    }
+  }
+
+  void _appendApiItems(List<Map<String, dynamic>> items) {
+    for (var i = 0; i < items.length; i++) {
+      final m = items[i];
+      final id = (m["_id"] ?? m["id"] ?? m["link"] ?? "api-$i").toString();
+      if (_seenApiIds.add(id)) {
+        m["_id"] = id; // 없던 경우 주입
+        clothes.add(m);
+      }
+    }
+  }
+
+  void _appendFsDocs(List<QueryDocumentSnapshot<Map<String, dynamic>>> docs) {
+    for (final d in docs) {
+      final path = d.reference.path;
+      if (_seenFsPaths.add(path)) {
+        clothes.add(d);
+      }
     }
   }
 
@@ -523,7 +679,12 @@ class _RecommendationPageState extends State<RecommendationPage> {
     }
   }
 
-  // 즐겨찾기 수집
+  // ===== 즐겨찾기 수집/저장 =====
+
+  // 문서 ID 고정 생성(카테고리 프리픽스 + 아이템 ID) → 중복 방지
+  String _favDocId(String id) =>
+      (categoryFsSub.isNotEmpty ? '${categoryFsSub}_$id' : id);
+
   List<Map<String, dynamic>> _collectFavoriteItems() {
     final List<Map<String, dynamic>> result = [];
     for (int i = 0; i < clothes.length; i++) {
@@ -551,10 +712,11 @@ class _RecommendationPageState extends State<RecommendationPage> {
 
       if (favoriteIds.contains(id)) {
         result.add({
+          'id': id, // ✅ 저장 시 문서 ID 고정에 사용
           'title': title,
           'image': image,
           'link': link,
-          'category': category,
+          'category': category, // ✅ 한글: 상의/하의/원피스
           'savedAt': FieldValue.serverTimestamp(),
         });
       }
@@ -573,19 +735,27 @@ class _RecommendationPageState extends State<RecommendationPage> {
     }
 
     try {
-      final userDoc = await userDocByHandle();
-      final favoritesCol = userDoc.collection('favorites');
+      final col = favoritesCol(); // ✅ users/{handle}/favorites
 
       final batch = FirebaseFirestore.instance.batch();
       for (final item in items) {
-        final ref = favoritesCol.doc();
-        batch.set(ref, item);
+        final String rawId = (item['id'] as String?) ?? '';
+        final String docId = _favDocId(rawId);
+        // 중복 방지: 같은 아이템이면 덮어쓰기(merge)
+        batch.set(col.doc(docId), item, SetOptions(merge: true));
       }
       await batch.commit();
 
       if (!mounted) return;
       ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text('즐겨찾기를 저장했어요 (${items.length}개 추가)')),
+        SnackBar(
+          content: Text('즐겨찾기를 저장했어요 (${items.length}개 저장)'),
+          action: SnackBarAction(
+            label: '즐겨찾기 보기',
+            onPressed: () => Navigator.pushNamed(context, '/stylist'),
+            textColor: const Color(0xFF63C6D1),
+          ),
+        ),
       );
     } catch (_) {
       if (!mounted) return;
@@ -622,12 +792,6 @@ class _RecommendationPageState extends State<RecommendationPage> {
 
   @override
   Widget build(BuildContext context) {
-    final maxToShow = (page + 1) * itemsPerPage;
-    final visibleCount = maxToShow < clothes.length
-        ? maxToShow
-        : clothes.length;
-    final hasMore = visibleCount < clothes.length;
-
     final pillStyle = OutlinedButton.styleFrom(
       shape: const StadiumBorder(),
       side: const BorderSide(color: Color(0xFFB3B3B3)),
@@ -661,7 +825,7 @@ class _RecommendationPageState extends State<RecommendationPage> {
               ListTile(
                 leading: const Icon(Icons.star),
                 title: const Text('즐겨찾기'),
-                onTap: () => Navigator.pushNamed(context, '/favorites'),
+                onTap: () => Navigator.pushNamed(context, '/stylist'),
               ),
               ListTile(
                 leading: const Icon(Icons.search),
@@ -765,7 +929,7 @@ class _RecommendationPageState extends State<RecommendationPage> {
                               crossAxisSpacing: 12,
                               mainAxisSpacing: 12,
                             ),
-                        itemCount: visibleCount,
+                        itemCount: clothes.length, // ★ 전체 표시
                         itemBuilder: (context, index) {
                           final doc = clothes[index];
 
@@ -821,7 +985,9 @@ class _RecommendationPageState extends State<RecommendationPage> {
                                       right: 8,
                                       top: 8,
                                       child: Material(
-                                        color: Colors.white.withOpacity(0.9),
+                                        color: Colors.white.withValues(
+                                          alpha: 0.9,
+                                        ),
                                         shape: const CircleBorder(),
                                         elevation: 2,
                                         child: InkWell(
@@ -874,7 +1040,6 @@ class _RecommendationPageState extends State<RecommendationPage> {
                               ),
                             ],
                           );
-                          // ====== UI 변경 끝 ======
                         },
                       ),
                     ),
@@ -887,34 +1052,33 @@ class _RecommendationPageState extends State<RecommendationPage> {
                       bottom: 20,
                       top: 8,
                     ),
-                    child: hasMore
-                        ? Row(
-                            mainAxisAlignment: MainAxisAlignment.center,
-                            children: [
-                              OutlinedButton(
-                                onPressed: favoriteIds.isNotEmpty
-                                    ? _saveFavorites
-                                    : null,
-                                style: pillStyle,
-                                child: const Text('즐겨찾기 저장'),
-                              ),
-                              const SizedBox(width: 12),
-                              OutlinedButton(
-                                onPressed: () => setState(() => page++),
-                                style: pillStyle,
-                                child: const Text('추천 더보기'),
-                              ),
-                            ],
-                          )
-                        : Center(
-                            child: OutlinedButton(
-                              onPressed: favoriteIds.isNotEmpty
-                                  ? _saveFavorites
-                                  : null,
-                              style: pillStyle,
-                              child: const Text('즐겨찾기 저장'),
-                            ),
+                    child: Row(
+                      mainAxisAlignment: MainAxisAlignment.center,
+                      children: [
+                        OutlinedButton(
+                          onPressed: favoriteIds.isNotEmpty
+                              ? _saveFavorites
+                              : null,
+                          style: pillStyle,
+                          child: const Text('즐겨찾기 저장'),
+                        ),
+                        const SizedBox(width: 12),
+                        if (_hasMore)
+                          OutlinedButton(
+                            onPressed: _isLoadingMore ? null : _loadMore,
+                            style: pillStyle,
+                            child: _isLoadingMore
+                                ? const SizedBox(
+                                    height: 18,
+                                    width: 18,
+                                    child: CircularProgressIndicator(
+                                      strokeWidth: 2,
+                                    ),
+                                  )
+                                : const Text('추천 더보기'),
                           ),
+                      ],
+                    ),
                   ),
                 ],
               ),
