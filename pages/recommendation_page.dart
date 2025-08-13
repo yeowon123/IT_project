@@ -283,7 +283,7 @@ class _RecommendationPageState extends State<RecommendationPage> {
         }
       }
 
-      _addLog("[API] 추천 0개 또는 알 수 없는 스키마");
+      _addLog("[API] 추천 0개 또는 알 수 없는 스키마]");
       return {
         "names": <String>[],
         "items": <Map<String, dynamic>>[],
@@ -726,11 +726,19 @@ class _RecommendationPageState extends State<RecommendationPage> {
 
   Future<void> _saveFavorites() async {
     final items = _collectFavoriteItems();
+    const snackBg = Color(0xFFB3B3B3); // ✅ 요청 색상
+
     if (items.isEmpty) {
       if (!mounted) return;
-      ScaffoldMessenger.of(
-        context,
-      ).showSnackBar(const SnackBar(content: Text('선택된 즐겨찾기가 없어요.')));
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          backgroundColor: snackBg,
+          content: Text(
+            '선택된 즐겨찾기가 없어요.',
+            style: TextStyle(color: Colors.black),
+          ),
+        ),
+      );
       return;
     }
 
@@ -749,19 +757,29 @@ class _RecommendationPageState extends State<RecommendationPage> {
       if (!mounted) return;
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
-          content: Text('즐겨찾기를 저장했어요 (${items.length}개 저장)'),
+          backgroundColor: snackBg, // ✅ 전체 창 배경색
+          content: const Text(
+            '즐겨찾기를 저장했어요.',
+            style: TextStyle(color: Colors.black),
+          ),
           action: SnackBarAction(
             label: '즐겨찾기 보기',
             onPressed: () => Navigator.pushNamed(context, '/stylist'),
-            textColor: const Color(0xFF63C6D1),
+            textColor: Colors.black, // ✅ 액션 텍스트도 어둡게
           ),
         ),
       );
     } catch (_) {
       if (!mounted) return;
-      ScaffoldMessenger.of(
-        context,
-      ).showSnackBar(const SnackBar(content: Text('즐겨찾기 저장에 실패했어요.')));
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          backgroundColor: snackBg,
+          content: Text(
+            '즐겨찾기 저장에 실패했어요.',
+            style: TextStyle(color: Colors.black),
+          ),
+        ),
+      );
     }
   }
 
