@@ -39,39 +39,37 @@
 <table style="width: 100%; border-collapse: collapse; text-align: center;">
   <tr>
     <td style="width: 50%; border: 1px solid #ccc;">
-      <img src="image/android_app.png" style="max-width:95%;">
+      <img src="image/android_app.png" style="max-width:95%;"><br>
     </td>
     <td style="width: 50%; border: 1px solid #ccc;">
-      <img src="image/login.png" style="max-width:95%;">
+      <img src="image/login.png" style="max-width:95%;"><br>
     </td>
   </tr>
   <tr>
-    <td style="border: 1px solid #ccc;">
-      <img src="https://img.shields.io/badge/1.%20안드로이드%20앱-%20-%2363c7d2?style=flat&labelColor=%2363c7d2&color=%2363c7d2">
+    <td style="background-color: #63c7d2; color: white; padding: 8px; border: 1px solid #ccc;">
+      <b>1. 안드로이드 앱</b>
     </td>
-    <td style="border: 1px solid #ccc;">
-      <img src="https://img.shields.io/badge/2.%20로그인(자동%20회원가입)-%20-%2363c7d2?style=flat&labelColor=%2363c7d2&color=%2363c7d2">
-    </td>
-  </tr>
-
-  <tr>
-    <td style="width: 50%; border: 1px solid #ccc;">
-      <img src="image/season_situation.png" style="max-width:95%;">
-    </td>
-    <td style="width: 50%; border: 1px solid #ccc;">
-      <img src="image/style_select.png" style="max-width:95%;">
+    <td style="background-color: #63c7d2; color: white; padding: 8px; border: 1px solid #ccc;">
+      <b>2. 로그인(자동 회원가입)</b>
     </td>
   </tr>
   <tr>
-    <td style="border: 1px solid #ccc;">
-      <img src="https://img.shields.io/badge/3.%20계절,%20상황%20선택-%20-%2363c7d2?style=flat&labelColor=%2363c7d2&color=%2363c7d2">
+    <td style="width: 50%; border: 1px solid #ccc;">
+      <img src="image/season_situation.png" style="max-width:95%;"><br>
     </td>
-    <td style="border: 1px solid #ccc;">
-      <img src="https://img.shields.io/badge/4.%20스타일%20선택-%20-%2363c7d2?style=flat&labelColor=%2363c7d2&color=%2363c7d2">
+    <td style="width: 50%; border: 1px solid #ccc;">
+      <img src="image/style_select.png" style="max-width:95%;"><br>
+    </td>
+  </tr>
+  <tr>
+    <td style="background-color: #63c7d2; color: white; padding: 8px; border: 1px solid #ccc;">
+      <b>3. 계절, 상황 선택</b>
+    </td>
+    <td style="background-color: #63c7d2; color: white; padding: 8px; border: 1px solid #ccc;">
+      <b>4. 스타일 선택</b>
     </td>
   </tr>
 </table>
-
 
 ---
 
