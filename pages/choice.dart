@@ -8,9 +8,48 @@ class ChoicePage extends StatefulWidget {
 }
 
 class _ChoicePageState extends State<ChoicePage> {
+  // ★ 선택된 한글 카테고리 ('상의' | '하의' | '원피스')
   String? selectedCategory;
 
+  // ★ 전달받은 값들을 state에 보관
+  late String name;
+  late String season;
+  late String situation;
+  String? style;
+
+  // ★ 카테고리 매핑표 (API / Firestore)
+  static const Map<String, String> _apiCategoryMap = {
+    '상의': 'top',
+    '하의': 'bottom',
+    '원피스': 'onepiece',
+  };
+  static const Map<String, String> _fsCategoryMap = {
+    '상의': 'tops',
+    '하의': 'bottoms',
+    '원피스': 'setup',
+  };
+
+  bool get _isLovely {
+    final s = (style ?? '').trim().toLowerCase();
+    return s == 'lovely' || style == '러블리';
+  }
+
+  @override
+  void didChangeDependencies() {
+    super.didChangeDependencies();
+    final args =
+        (ModalRoute.of(context)?.settings.arguments as Map<String, String?>?) ??
+        {};
+    name = args['name'] ?? '';
+    season = args['season'] ?? '';
+    situation = args['situation'] ?? '';
+    style = args['style'];
+  }
+
   void _showCategoryDialog(BuildContext context) {
+    // ★ 러블리일 때만 '원피스' 포함
+    final options = _isLovely ? ['상의', '하의', '원피스'] : ['상의', '하의'];
+
     showDialog(
       context: context,
       builder: (context) => Dialog(
@@ -38,7 +77,7 @@ class _ChoicePageState extends State<ChoicePage> {
               const SizedBox(height: 20),
               Wrap(
                 spacing: 12,
-                children: ['상의', '하의', '원피스'].map((category) {
+                children: options.map((category) {
                   final isSelected = selectedCategory == category;
                   return ElevatedButton(
                     onPressed: () {
@@ -74,40 +113,45 @@ class _ChoicePageState extends State<ChoicePage> {
   }
 
   void _navigateToRecommendation() {
-    if (selectedCategory != null) {
-      final arguments =
-          ModalRoute.of(context)!.settings.arguments as Map<String, String?>;
-      final season = arguments['season'] ?? '';
-      final situation = arguments['situation'] ?? '';
-      final style = arguments['style'] ?? '';
-
-      Navigator.pushNamed(
-        context,
-        '/recommendation',
-        arguments: {
-          'category': selectedCategory,
-          'season': season,
-          'situation': situation,
-          'style': style,
-        },
-      );
-    } else {
+    if (selectedCategory == null) {
       ScaffoldMessenger.of(
         context,
       ).showSnackBar(const SnackBar(content: Text('카테고리를 선택하세요')));
+      return;
     }
+
+    // ★ 러블리 외 스타일에서 ‘원피스’가 선택되지 않도록 2중 방어
+    if (!_isLovely && selectedCategory == '원피스') {
+      ScaffoldMessenger.of(
+        context,
+      ).showSnackBar(const SnackBar(content: Text('이 스타일에서는 원피스를 선택할 수 없어요.')));
+      return;
+    }
+
+    // ★ API/FS 모두 코드값으로 변환해 함께 전달
+    final categoryKr = selectedCategory!;
+    final categoryApi = _apiCategoryMap[categoryKr] ?? 'top';
+    final categoryFs = _fsCategoryMap[categoryKr] ?? 'tops';
+
+    Navigator.pushNamed(
+      context,
+      '/recommendation',
+      arguments: {
+        'season': season,
+        'situation': situation,
+        'style': style ?? '',
+        // ★ 서버 호출용
+        'categoryApi': categoryApi, // top | bottom | onepiece
+        // ★ Firestore 조회용
+        'categoryFs': categoryFs, // tops | bottoms | setup
+        // (표시용)
+        'categoryKr': categoryKr, // 상의 | 하의 | 원피스
+      },
+    );
   }
 
   @override
   Widget build(BuildContext context) {
-    final arguments =
-        ModalRoute.of(context)!.settings.arguments as Map<String, String?>;
-
-    final name = arguments['name'] ?? '';
-    final season = arguments['season'] ?? '';
-    final situation = arguments['situation'] ?? '';
-    final style = arguments['style'];
-
     return Scaffold(
       backgroundColor: Colors.white,
       appBar: AppBar(
