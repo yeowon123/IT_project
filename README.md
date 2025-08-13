@@ -36,28 +36,25 @@
 
 ## ✨ 기능 동작 사진
 
-<div align="center">
+<div style="text-align: center;">
   <img src="images/android_app.png" width="500"><br>
   <b>1. 안드로이드 앱</b>
 </div>
 
-<div align="center">
+<div style="text-align: center;">
   <img src="images/login.png" width="500"><br>
   <b>2. 로그인(자동 회원가입)</b>
 </div>
 
-<div align="center">
+<div style="text-align: center;">
   <img src="images/season_situation.png" width="500"><br>
   <b>3. 계절, 상황 선택</b>
 </div>
 
-<div align="center">
+<div style="text-align: center;">
   <img src="images/style_select.png" width="500"><br>
   <b>4. 스타일 선택</b>
 </div>
-
-
-
 
 ---
 
