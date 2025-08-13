@@ -35,26 +35,27 @@
 ---
 
 ## ✨ 기능 동작 사진
+## ✨ 기능 동작 사진
 
 <table>
   <tr>
     <td style="text-align: center; width: 50%;">
-      <img src="images/android_app.png" width="95%"><br>
-      <b>1. 안드로이드 앱</b>
+      <img src="image/android_app.png" width="95%"><br>
+      <b style="background-color: #3c6d1ff;">1. 안드로이드 앱</b>
     </td>
     <td style="text-align: center; width: 50%;">
-      <img src="images/login.png" width="95%"><br>
-      <b>2. 로그인(자동 회원가입)</b>
+      <img src="image/login.png" width="95%"><br>
+      <b style="background-color: #3c6d1ff;">2. 로그인(자동 회원가입)</b>
     </td>
   </tr>
   <tr>
     <td style="text-align: center; width: 50%;">
-      <img src="images/season_situation.png" width="95%"><br>
-      <b>3. 계절, 상황 선택</b>
+      <img src="image/season_situation.png" width="95%"><br>
+      <b style="background-color: #3c6d1ff;">3. 계절, 상황 선택</b>
     </td>
     <td style="text-align: center; width: 50%;">
-      <img src="images/style_select.png" width="95%"><br>
-      <b>4. 스타일 선택</b>
+      <img src="image/style_select.png" width="95%"><br>
+      <b style="background-color: #3c6d1ff;">4. 스타일 선택</b>
     </td>
   </tr>
 </table>
