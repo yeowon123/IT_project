@@ -17,15 +17,14 @@ class RecommendationPage extends StatefulWidget {
 }
 
 class _RecommendationPageState extends State<RecommendationPage> {
-  // ====== API 설정 ======
+  static const bool kAltForSmartstoreInEmulator = true;
   static const String _apiKey = "twenty-clothes-api-key";
   static const Duration apiTimeout = Duration(seconds: 60);
   static const Duration pingTimeout = Duration(seconds: 20);
 
   late final String _apiUrl = "${_apiBase()}/recommend";
 
-  String _apiBase() {
-    // flutter run --dart-define=API_BASE=http://172.30.1.2:8000 로 덮어쓰기 가능
+  String _apiBase() { 
     const fromDefine = String.fromEnvironment('API_BASE');
     if (fromDefine.isNotEmpty) return fromDefine;
 
@@ -40,7 +39,7 @@ class _RecommendationPageState extends State<RecommendationPage> {
     }
   }
 
-  /// Firestore 문서 또는 서버에서 온 Map을 함께 담기 위해 dynamic 사용
+  
   List<dynamic> clothes = [];
   int page = 0;
   static const int itemsPerPage = 8;
@@ -55,7 +54,7 @@ class _RecommendationPageState extends State<RecommendationPage> {
 
   Set<String> favoriteIds = {};
 
-  // 디버그 로그
+
   final StringBuffer _log = StringBuffer();
   void _addLog(String msg) {
     debugPrint(msg);
@@ -77,7 +76,7 @@ class _RecommendationPageState extends State<RecommendationPage> {
     }
   }
 
-  // ===== 한국어 → 서버 enum(영어) 변환 =====
+  
   String _toApiStyle(String s) {
     final base = s.split('/').first.trim();
     const map = {
@@ -123,7 +122,7 @@ class _RecommendationPageState extends State<RecommendationPage> {
     return map[s] ?? s.toLowerCase();
   }
 
-  // ===== API 결과 파싱 (문자열 배열/객체 배열 모두 지원) =====
+ 
   Future<Map<String, dynamic>> _fetchFromApi() async {
     final url = Uri.parse(_apiUrl);
     final email = FirebaseAuth.instance.currentUser?.email ?? "guest@local";
@@ -201,7 +200,7 @@ class _RecommendationPageState extends State<RecommendationPage> {
     }
   }
 
-  // ===== Firestore 서브컬렉션명 =====
+  
   String _subCollectionOf(String category) {
     switch (category) {
       case '상의':
@@ -212,13 +211,13 @@ class _RecommendationPageState extends State<RecommendationPage> {
       case '세트':
         return 'setup';
       case '원피스':
-        return 'onepiece'; // 프로젝트에 있으면 사용
+        return 'onepiece'; 
       default:
         return '';
     }
   }
 
-  // ===== Firestore 조회 (name/title whereIn, 10개 청크) =====
+  
   Future<List<QueryDocumentSnapshot<Map<String, dynamic>>>> _queryByNamesBoth(
     String subCollection,
     List<String> names,
@@ -269,7 +268,7 @@ class _RecommendationPageState extends State<RecommendationPage> {
     return snap.docs;
   }
 
-  // ===== 메인 로더 =====
+  
   Future<void> fetchClothes() async {
     setState(() {
       isLoading = true;
@@ -283,7 +282,6 @@ class _RecommendationPageState extends State<RecommendationPage> {
       final sub = _subCollectionOf(category);
       _addLog("[FS] 카테고리='$category' → sub='$sub'");
 
-      // 1) 서버가 객체 배열을 주면 그대로 표시
       final serverItems = (api["items"] is List)
           ? List<Map<String, dynamic>>.from(api["items"])
           : <Map<String, dynamic>>[];
@@ -300,7 +298,6 @@ class _RecommendationPageState extends State<RecommendationPage> {
         return;
       }
 
-      // 2) 문자열 이름 배열이면 파베 매칭
       final names = (api["names"] is List)
           ? List<String>.from(api["names"])
           : <String>[];
@@ -337,7 +334,7 @@ class _RecommendationPageState extends State<RecommendationPage> {
         _addLog("[UI] 서버 추천이 비었거나 sub 비어 있음 → Fallback 시도");
       }
 
-      // 3) Fallback
+   
       if (sub.isNotEmpty) {
         final fallbacks = await _fallbackFromFS(sub);
         if (!mounted) return;
@@ -364,13 +361,13 @@ class _RecommendationPageState extends State<RecommendationPage> {
     }
   }
 
-  // ===== URL 열기 (제목만 탭 가능) =====
+ 
   String _normalizeUrl(String url) {
     // 1) 보이지 않는 문자 제거 + 공백 정리
     var s = url.replaceAll(RegExp(r'[\u200B-\u200D\uFEFF]'), '').trim();
     if (s.isEmpty) return s;
 
-    // 2) 프로토콜 보정
+
     if (s.startsWith('//')) s = 'https:$s';
     if (!s.startsWith('http://') && !s.startsWith('https://')) s = 'https://$s';
 
@@ -381,7 +378,7 @@ class _RecommendationPageState extends State<RecommendationPage> {
       return s;
     }
 
-    // 3) shopping.naver.com (dooropen/outlink) → 실제 URL 복원
+ 
     if (uri.host.contains('shopping.naver.com')) {
       final door = uri.queryParameters['url'] ?? uri.queryParameters['u'];
       if (door != null && door.isNotEmpty) {
@@ -393,12 +390,11 @@ class _RecommendationPageState extends State<RecommendationPage> {
       }
     }
 
-    // 4) http → https
+
     if (uri.scheme == 'http') {
       uri = uri.replace(scheme: 'https');
     }
 
-    // 5) 스마트스토어: 모바일 정규형으로 고정 (쿼리/해시 제거)
     if (uri.host.endsWith('smartstore.naver.com')) {
       // 경로에서 products/{id} 추출
       final m = RegExp(r'/products/(\d+)').firstMatch(uri.path);
@@ -419,7 +415,6 @@ class _RecommendationPageState extends State<RecommendationPage> {
         return 'https://m.smartstore.naver.com/products/$pid';
       }
 
-      // 그래도 못 찾으면 모바일 도메인만 유지
       return Uri(
         scheme: 'https',
         host: 'm.smartstore.naver.com',
@@ -427,12 +422,40 @@ class _RecommendationPageState extends State<RecommendationPage> {
       ).toString();
     }
 
-    // 6) 기타: 트래킹 파라미터 제거 및 뒤에 '?' 방지
     final cleaned = uri.replace(queryParameters: {});
     final out = cleaned.toString();
     return out.endsWith('?') ? out.substring(0, out.length - 1) : out;
   }
 
+  bool _isSmartstore(String u) =>
+      Uri.tryParse(u)?.host.endsWith('smartstore.naver.com') ?? false;
+
+  String? _extractSmartstorePid(String u) {
+    final m1 = RegExp(r'/products/(\d+)').firstMatch(u);
+    if (m1 != null) return m1.group(1);
+    final m2 = RegExp(
+      r'[?&](productNo|itemId|pdpNo|prdNo)=(\d+)',
+    ).firstMatch(u);
+    return m2?.group(2);
+  }
+
+  Future<bool> _blockedByNaver(Uri u) async {
+    try {
+      final r = await http.get(u).timeout(const Duration(seconds: 3));
+      final t = r.body;
+      return t.contains('접속이 일시적으로 제한') || t.contains('현재 서비스 접속이 불가합니다');
+    } catch (_) {
+      return false; 
+    }
+  }
+
+  Future<bool> _openExternal(Uri u) async {
+    try {
+      return await launchUrl(u, mode: LaunchMode.externalApplication);
+    } catch (_) {
+      return false;
+    }
+  }
   Future<void> _launchURL(String raw) async {
     debugPrint('RAW URL >>> $raw');
     final normalized = _normalizeUrl(raw);
@@ -445,6 +468,7 @@ class _RecommendationPageState extends State<RecommendationPage> {
       ).showSnackBar(const SnackBar(content: Text('링크가 없어요.')));
       return;
     }
+
     final uri = Uri.tryParse(normalized);
     if (uri == null) {
       if (!mounted) return;
@@ -453,23 +477,33 @@ class _RecommendationPageState extends State<RecommendationPage> {
       ).showSnackBar(const SnackBar(content: Text('잘못된 링크 형식이에요.')));
       return;
     }
-    try {
-      final ok = await launchUrl(uri, mode: LaunchMode.externalApplication);
-      if (!ok && mounted) {
-        ScaffoldMessenger.of(
-          context,
-        ).showSnackBar(const SnackBar(content: Text('링크를 열 수 없습니다.')));
+
+    if (_isSmartstore(normalized)) {
+      final pid = _extractSmartstorePid(normalized);
+      if (pid != null) {
+        if (kAltForSmartstoreInEmulator) {
+          final alt = Uri.parse(
+            'https://msearch.shopping.naver.com/product/$pid',
+          );
+          if (await _openExternal(alt)) return;
+        }
+        if (await _blockedByNaver(uri)) {
+          final alt = Uri.parse(
+            'https://msearch.shopping.naver.com/product/$pid',
+          );
+          if (await _openExternal(alt)) return;
+        }
       }
-    } catch (_) {
-      if (mounted) {
-        ScaffoldMessenger.of(
-          context,
-        ).showSnackBar(const SnackBar(content: Text('링크를 여는 중 오류가 발생했어요.')));
-      }
+    }
+
+    final ok = await _openExternal(uri);
+    if (!ok && mounted) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('링크를 열 수 없습니다. 다른 네트워크에서 다시 시도해 주세요.')),
+      );
     }
   }
 
-  // 즐겨찾기 수집
   List<Map<String, dynamic>> _collectFavoriteItems() {
     final List<Map<String, dynamic>> result = [];
     for (int i = 0; i < clothes.length; i++) {
@@ -541,7 +575,6 @@ class _RecommendationPageState extends State<RecommendationPage> {
     }
   }
 
-  // API 핑(연결 확인)
   Future<void> _pingApi() async {
     final docsUrl = Uri.parse("${_apiBase()}/docs");
     final specUrl = Uri.parse("${_apiBase()}/openapi.json");
@@ -738,68 +771,89 @@ class _RecommendationPageState extends State<RecommendationPage> {
                           }
 
                           return Column(
-                            crossAxisAlignment: CrossAxisAlignment.start,
+                            crossAxisAlignment: CrossAxisAlignment.stretch,
                             children: [
-                              // 이미지 (탭 없음)
+                              // 이미지 + 즐겨찾기(오버레이)
                               Padding(
                                 padding: const EdgeInsets.symmetric(
                                   horizontal: 8.0,
                                 ),
-                                child: ClipRRect(
-                                  borderRadius: BorderRadius.circular(10),
-                                  child: Image.network(
-                                    imageUrl,
-                                    height: 120,
-                                    width: double.infinity,
-                                    fit: BoxFit.cover,
-                                    errorBuilder: (_, __, ___) =>
-                                        const Icon(Icons.image, size: 150),
-                                  ),
+                                child: Stack(
+                                  children: [
+                                    SizedBox(
+                                      height: 120,
+                                      width: double.infinity,
+                                      child: ClipRRect(
+                                        borderRadius: BorderRadius.circular(10),
+                                        child: Image.network(
+                                          imageUrl,
+                                          fit: BoxFit.cover,
+                                          errorBuilder: (_, __, ___) =>
+                                              const Icon(
+                                                Icons.image,
+                                                size: 150,
+                                              ),
+                                        ),
+                                      ),
+                                    ),
+                                    Positioned(
+                                      right: 8,
+                                      top: 8,
+                                      child: Material(
+                                        color: Colors.white.withOpacity(0.9),
+                                        shape: const CircleBorder(),
+                                        elevation: 2,
+                                        child: InkWell(
+                                          customBorder: const CircleBorder(),
+                                          onTap: () {
+                                            setState(() {
+                                              if (favoriteIds.contains(id)) {
+                                                favoriteIds.remove(id);
+                                              } else {
+                                                favoriteIds.add(id);
+                                              }
+                                            });
+                                          },
+                                          child: Padding(
+                                            padding: const EdgeInsets.all(6),
+                                            child: Icon(
+                                              favoriteIds.contains(id)
+                                                  ? Icons.star
+                                                  : Icons.star_border,
+                                              size: 18,
+                                              color: const Color(0xFF63C6D1),
+                                            ),
+                                          ),
+                                        ),
+                                      ),
+                                    ),
+                                  ],
                                 ),
                               ),
                               const SizedBox(height: 8),
-                              // 상품명 (탭 → 외부 브라우저)
                               Padding(
-                                padding: const EdgeInsets.only(left: 28.0),
+                                padding: const EdgeInsets.symmetric(
+                                  horizontal: 10.0,
+                                ),
                                 child: InkWell(
                                   onTap: () => _launchURL(link),
                                   child: Text(
                                     title,
-                                    maxLines: 1,
+                                    maxLines: 2,
                                     overflow: TextOverflow.ellipsis,
+                                    textAlign: TextAlign.center,
                                     style: const TextStyle(
-                                      fontWeight: FontWeight.w500,
+                                      fontWeight: FontWeight.w600,
                                       decoration: TextDecoration.underline,
+                                      fontSize: 13,
+                                      height: 1.3,
                                     ),
                                   ),
                                 ),
                               ),
-                              // 즐겨찾기
-                              Align(
-                                alignment: Alignment.centerLeft,
-                                child: IconButton(
-                                  icon: Icon(
-                                    favoriteIds.contains(id)
-                                        ? Icons.star
-                                        : Icons.star_border,
-                                    color: const Color(0xFF63C6D1),
-                                    size: 24,
-                                  ),
-                                  padding: EdgeInsets.zero,
-                                  constraints: const BoxConstraints(),
-                                  onPressed: () {
-                                    setState(() {
-                                      if (favoriteIds.contains(id)) {
-                                        favoriteIds.remove(id);
-                                      } else {
-                                        favoriteIds.add(id);
-                                      }
-                                    });
-                                  },
-                                ),
-                              ),
                             ],
                           );
+                          
                         },
                       ),
                     ),
@@ -848,7 +902,6 @@ class _RecommendationPageState extends State<RecommendationPage> {
   }
 }
 
-// 오버스크롤 글로우/스트레치 제거용
 class _NoGlowScrollBehavior extends ScrollBehavior {
   const _NoGlowScrollBehavior();
 
