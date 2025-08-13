@@ -38,82 +38,52 @@
 
 <table style="width: 100%; border-collapse: collapse; text-align: center;">
   <tr>
-    <td style="width: 50%; border: 1px solid #ccc;">
+    <td style="width: 50%; border: 1px solid #ccc; text-align: center;">
       <img src="image/android_app.png" style="max-width:95%;"><br>
-    </td>
-    <td style="width: 50%; border: 1px solid #ccc;">
-      <img src="image/login.png" style="max-width:95%;"><br>
-    </td>
-  </tr>
-  <tr>
-    <td style="padding: 8px; border: 1px solid #ccc;">
       <b>1. 안드로이드 앱</b>
     </td>
-    <td style="padding: 8px; border: 1px solid #ccc;">
+    <td style="width: 50%; border: 1px solid #ccc; text-align: center;">
+      <img src="image/login.png" style="max-width:95%;"><br>
       <b>2. 로그인(자동 회원가입)</b>
     </td>
   </tr>
   <tr>
-    <td style="width: 50%; border: 1px solid #ccc;">
+    <td style="width: 50%; border: 1px solid #ccc; text-align: center;">
       <img src="image/season_situation.png" style="max-width:95%;"><br>
-    </td>
-    <td style="width: 50%; border: 1px solid #ccc;">
-      <img src="image/style_select.png" style="max-width:95%;"><br>
-    </td>
-  </tr>
-  <tr>
-    <td style="padding: 8px; border: 1px solid #ccc;">
       <b>3. 계절, 상황 선택</b>
     </td>
-    <td style="padding: 8px; border: 1px solid #ccc;">
+    <td style="width: 50%; border: 1px solid #ccc; text-align: center;">
+      <img src="image/style_select.png" style="max-width:95%;"><br>
       <b>4. 스타일 선택</b>
     </td>
   </tr>
   <tr>
-    <td style="width: 50%; border: 1px solid #ccc;">
-      <img src="image/선택 결과 확인.png" style="max-width:95%;"><br>
-    </td>
-    <td style="width: 50%; border: 1px solid #ccc;">
-      <img src="image/다양한 옷 추천.png" style="max-width:95%;"><br>
-    </td>
-  </tr>
-  <tr>
-    <td style="padding: 8px; border: 1px solid #ccc;">
+    <td style="width: 50%; border: 1px solid #ccc; text-align: center;">
+      <img src="image/선택_결과_확인.png" style="max-width:95%;"><br>
       <b>5. 선택 결과 확인</b>
     </td>
-    <td style="padding: 8px; border: 1px solid #ccc;">
+    <td style="width: 50%; border: 1px solid #ccc; text-align: center;">
+      <img src="image/다양한_옷_추천.png" style="max-width:95%;"><br>
       <b>6. 다양한 옷 추천</b>
     </td>
   </tr>
   <tr>
-    <td style="width: 50%; border: 1px solid #ccc;">
-      <img src="image/즐겨찾기 저장.png" style="max-width:95%;"><br>
-    </td>
-    <td style="width: 50%; border: 1px solid #ccc;">
-      <img src="image/마이페이지 즐겨찾기 확인 가능.png" style="max-width:95%;"><br>
-    </td>
-  </tr>
-  <tr>
-    <td style="padding: 8px; border: 1px solid #ccc;">
+    <td style="width: 50%; border: 1px solid #ccc; text-align: center;">
+      <img src="image/즐겨찾기_저장.png" style="max-width:95%;"><br>
       <b>7. 즐겨찾기 저장</b>
     </td>
-    <td style="padding: 8px; border: 1px solid #ccc;">
+    <td style="width: 50%; border: 1px solid #ccc; text-align: center;">
+      <img src="image/마이페이지_즐겨찾기_확인_가능.png" style="max-width:95%;"><br>
       <b>8. 마이페이지에서 즐겨찾기 확인 가능</b>
     </td>
   </tr>
   <tr>
-    <td style="width: 50%; border: 1px solid #ccc;">
-      <img src="image/상의 하의 원피스 선택.png" style="max-width:95%;"><br>
-    </td>
-    <td style="width: 50%; border: 1px solid #ccc;">
-      <img src="image/추천.png" style="max-width:95%;"><br>
-    </td>
-  </tr>
-  <tr>
-    <td style="padding: 8px; border: 1px solid #ccc;">
+    <td style="width: 50%; border: 1px solid #ccc; text-align: center;">
+      <img src="image/상의_하의_원피스_선택.png" style="max-width:95%;"><br>
       <b>9. 상의 하의 원피스 선택</b>
     </td>
-    <td style="padding: 8px; border: 1px solid #ccc;">
+    <td style="width: 50%; border: 1px solid #ccc; text-align: center;">
+      <img src="image/추천.png" style="max-width:95%;"><br>
       <b>10. 즐겨찾기 기반 추천 시스템</b>
     </td>
   </tr>
