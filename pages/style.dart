@@ -1,7 +1,7 @@
-// lib/pages/style_page.dart
 import 'package:flutter/material.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
-import '../utils/user_handle.dart';
+import '../user_handle.dart';
+import '../utils/user_handle.dart'; // 추가
 
 class StylePage extends StatefulWidget {
   const StylePage({super.key});
@@ -66,14 +66,14 @@ class _StylePageState extends State<StylePage> {
   Future<void> _prefillStyleFromFirestore() async {
     setState(() => _loadingPrefill = true);
     try {
-      final docRef = userDocRef(); // ✅ handle 기반 참조
-      final snap = await docRef.get();
+      final doc = await userDocByHandle();
+      final snap = await doc.get();
       final data = snap.data();
       if (data == null) return;
 
       final s = data['style'] as String?;
-      if (s != null && (styles.contains(s))) {
-        if (mounted) setState(() => selectedStyle = s);
+      if (s != null && mounted) {
+        setState(() => selectedStyle = s);
       }
     } catch (_) {
       // 필요 시 오류 처리
@@ -87,8 +87,9 @@ class _StylePageState extends State<StylePage> {
 
     setState(() => _saving = true);
     try {
-      // ✅ users/{handle}에 병합 저장
-      await userDocRef().set({
+      final doc = await userDocByHandle();
+      // style 병합 저장 (users/{handle})
+      await doc.set({
         'style': selectedStyle,
         'updatedAt': FieldValue.serverTimestamp(),
       }, SetOptions(merge: true));
@@ -130,8 +131,8 @@ class _StylePageState extends State<StylePage> {
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.center,
                   children: [
-                    const SizedBox(height: 20),
-                    Image.asset('assets/logo_3.png', width: 100),
+                    const SizedBox(height: 15),
+                    Image.asset('assets/logo_3.png', width: 250),
                     const SizedBox(height: 30),
                     buildTagBox('계절', _season),
                     const SizedBox(height: 16),
@@ -183,14 +184,14 @@ class _StylePageState extends State<StylePage> {
                     ),
                     child: _saving
                         ? const SizedBox(
-                            width: 16,
-                            height: 16,
-                            child: CircularProgressIndicator(strokeWidth: 2),
-                          )
+                      width: 16,
+                      height: 16,
+                      child: CircularProgressIndicator(strokeWidth: 2),
+                    )
                         : const Text(
-                            'Save',
-                            style: TextStyle(color: Colors.black),
-                          ),
+                      'Save',
+                      style: TextStyle(color: Colors.black),
+                    ),
                   ),
                 ],
               ),
