@@ -1,16 +1,27 @@
 import 'package:flutter/material.dart';
 import 'package:firebase_core/firebase_core.dart';
+import 'package:firebase_auth/firebase_auth.dart'; // ★ 변경: 최소 로그인 보장을 위해 추가
 import 'firebase_options.dart';
 import 'pages/style_page.dart';
 import 'pages/choice_page.dart';
 import 'pages/question_page.dart';
 import 'pages/recommendation_page.dart';
 import 'pages/stylist_page.dart';
-import 'pages/login_page.dart'; //  Firebase 로그인 페이지 import
+import 'pages/login_page.dart';
+import 'utils/user_handle.dart'; // ★ 변경: ensureUserHandle 사용
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
   await Firebase.initializeApp(options: DefaultFirebaseOptions.currentPlatform);
+
+  // ★ 변경: 앱 시작 시 익명 로그인 보장(디바이스에서 로그인 전 진입 방지)
+  if (FirebaseAuth.instance.currentUser == null) {
+    await FirebaseAuth.instance.signInAnonymously();
+  }
+
+  // ★ 변경: 사용자 핸들/루트문서 준비(즐겨찾기 컬렉션 참조가 null 되는 문제 방지)
+  await ensureUserHandle();
+
   runApp(const MyApp());
 }
 
@@ -22,35 +33,29 @@ class MyApp extends StatelessWidget {
     return MaterialApp(
       title: 'Fashion Recommender',
       debugShowCheckedModeBanner: false,
-
-      // ✅ 전체 스크롤 글로우/바운스 제거 (iOS bounce, Android glow)
       builder: (context, child) {
         return ScrollConfiguration(
           behavior: const _NoGlowScrollBehavior(),
           child: child!,
         );
       },
-
-      // ✅ AppBar가 스크롤 시 연보라색으로 변하는 M3 틴트/오버레이 제거
       theme: ThemeData(
         useMaterial3: true,
         primarySwatch: Colors.teal,
         appBarTheme: const AppBarTheme(
-          backgroundColor: Colors.white, // 항상 흰색
+          backgroundColor: Colors.white,
           foregroundColor: Colors.black,
           elevation: 0,
-          scrolledUnderElevation: 0, // 스크롤 아래로 내용이 지나가도 음영/오버레이 없음
-          surfaceTintColor: Colors.transparent, // M3 표면 틴트 제거
+          scrolledUnderElevation: 0,
+          surfaceTintColor: Colors.transparent,
         ),
       ),
-
       initialRoute: '/',
       routes: {
-        '/': (context) => const LoginPage(), //  로그인 페이지 연결
+        '/': (context) => const LoginPage(),
         '/question': (context) => const QuestionPage(),
         '/choice': (context) => const ChoicePage(),
         '/recommendation': (context) => const RecommendationPage(),
-        // 🔧 여기만 수정: 기본 생성자 사용
         '/style': (context) => const StylePage(),
         '/stylist': (context) => const StylistPage(),
       },
@@ -58,10 +63,8 @@ class MyApp extends StatelessWidget {
   }
 }
 
-//  스크롤 글로우/스트레치 제거용 (프로젝트 공용으로 써도 됨)
 class _NoGlowScrollBehavior extends ScrollBehavior {
   const _NoGlowScrollBehavior();
-
   @override
   Widget buildOverscrollIndicator(
     BuildContext context,
