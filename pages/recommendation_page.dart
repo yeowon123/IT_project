@@ -6,6 +6,8 @@ import 'dart:convert';
 import 'package:http/http.dart' as http;
 import 'package:flutter/foundation.dart' show kIsWeb, defaultTargetPlatform, TargetPlatform;
 import 'package:firebase_auth/firebase_auth.dart';
+import '../user_handle.dart';
+import '../user_handle.dart' as uh;
 import '../utils/user_handle.dart' as uh; // ★ 변경: null-safe 컬렉션 가드를 위해 별칭 import
 
 enum _PageMode { apiObjects, apiNamesFs, fsFallback }
@@ -173,10 +175,10 @@ class _RecommendationPageState extends State<RecommendationPage> {
       final t0 = DateTime.now();
       final res = await http
           .post(
-            url,
-            headers: {'Content-Type': 'application/json', 'x-api-key': _apiKey},
-            body: jsonEncode(body),
-          )
+        url,
+        headers: {'Content-Type': 'application/json', 'x-api-key': _apiKey},
+        body: jsonEncode(body),
+      )
           .timeout(apiTimeout);
       final ms = DateTime.now().difference(t0).inMilliseconds;
       _addLog("[API] ${res.statusCode}, ${ms}ms");
@@ -230,9 +232,9 @@ class _RecommendationPageState extends State<RecommendationPage> {
   }
 
   Future<List<QueryDocumentSnapshot<Map<String, dynamic>>>> _queryByNamesBoth(
-    String subCollection,
-    List<String> names,
-  ) async {
+      String subCollection,
+      List<String> names,
+      ) async {
     const chunkSize = 10;
     final acc = <QueryDocumentSnapshot<Map<String, dynamic>>>[];
 
@@ -254,10 +256,10 @@ class _RecommendationPageState extends State<RecommendationPage> {
   }
 
   Future<List<QueryDocumentSnapshot<Map<String, dynamic>>>> _fetchFsPage(
-    String subCollection, {
-    int limit = _remotePageSize,
-    bool next = false,
-  }) async {
+      String subCollection, {
+        int limit = _remotePageSize,
+        bool next = false,
+      }) async {
     if (subCollection.isEmpty) return [];
     Query<Map<String, dynamic>> q = FirebaseFirestore.instance.collectionGroup(subCollection).orderBy(FieldPath.documentId).limit(limit);
     if (next && _lastFsDoc != null) q = q.startAfterDocument(_lastFsDoc!);
@@ -665,183 +667,189 @@ class _RecommendationPageState extends State<RecommendationPage> {
         body: isLoading
             ? const Center(child: CircularProgressIndicator())
             : loadFailed
-                ? Center(child: OutlinedButton(onPressed: fetchClothes, style: pillStyle, child: const Text('다시 시도')))
-                : clothes.isEmpty
-                    ? Padding(
-                        padding: const EdgeInsets.all(16.0),
-                        child: Column(
-                          mainAxisSize: MainAxisSize.min,
-                          children: [
-                            const Text('추천 결과가 없어요.'),
-                            const SizedBox(height: 12),
-                            OutlinedButton(onPressed: fetchClothes, style: pillStyle, child: const Text('다시 시도')),
-                            const SizedBox(height: 24),
-                            ExpansionTile(
-                              title: const Text('진단 정보 보기'),
-                              children: [
-                                Container(
-                                  width: double.infinity,
-                                  padding: const EdgeInsets.all(12),
-                                  color: const Color(0xFFF7F7F7),
-                                  child: SingleChildScrollView(
-                                    scrollDirection: Axis.vertical,
-                                    child: SelectableText(_log.toString()),
+            ? Center(child: OutlinedButton(onPressed: fetchClothes, style: pillStyle, child: const Text('다시 시도')))
+            : clothes.isEmpty
+            ? Padding(
+          padding: const EdgeInsets.all(16.0),
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              const Text('추천 결과가 없어요.'),
+              const SizedBox(height: 12),
+              OutlinedButton(onPressed: fetchClothes, style: pillStyle, child: const Text('다시 시도')),
+              const SizedBox(height: 24),
+              ExpansionTile(
+                title: const Text('진단 정보 보기'),
+                children: [
+                  Container(
+                    width: double.infinity,
+                    padding: const EdgeInsets.all(12),
+                    color: const Color(0xFFF7F7F7),
+                    child: SingleChildScrollView(
+                      scrollDirection: Axis.vertical,
+                      child: SelectableText(_log.toString()),
+                    ),
+                  ),
+                  const SizedBox(height: 8),
+                  Row(
+                    mainAxisAlignment: MainAxisAlignment.center,
+                    children: [OutlinedButton(onPressed: _pingApi, style: pillStyle, child: const Text('API 핑'))],
+                  ),
+                  const SizedBox(height: 12),
+                ],
+              ),
+            ],
+          ),
+        )
+            : Column(
+          children: [
+            const Divider(color: Color(0xFF63C6D1), thickness: 1, indent: 24, endIndent: 24),
+            Padding(
+              padding: const EdgeInsets.fromLTRB(32, 12, 12, 12),
+              child: Align(
+                alignment: Alignment.centerLeft,
+                child: Text(category, style: const TextStyle(fontSize: 18, fontWeight: FontWeight.bold)),
+              ),
+            ),
+            Expanded(
+              child: ScrollConfiguration(
+                behavior: const _NoGlowScrollBehavior(),
+                child: GridView.builder(
+                  physics: const ClampingScrollPhysics(),
+                  padding: const EdgeInsets.symmetric(horizontal: 12),
+                  gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
+                    crossAxisCount: 2,
+                    childAspectRatio: 0.75,
+                    crossAxisSpacing: 12,
+                    mainAxisSpacing: 12,
+                  ),
+                  itemCount: clothes.length,
+                  itemBuilder: (context, index) {
+                    final doc = clothes[index];
+                    String imageUrl = '';
+                    String title = '';
+                    String link = '';
+                    String id = '';
+
+                    if (doc is QueryDocumentSnapshot<Map<String, dynamic>>) {
+                      final data = doc.data();
+                      imageUrl = (data['image'] ?? '').toString();
+                      title = (data['title'] ?? data['name'] ?? '옷 이름').toString();
+                      link = (data['link'] ?? '').toString();
+                      id = doc.id;
+                    } else if (doc is Map<String, dynamic>) {
+                      imageUrl = (doc['image'] ?? '').toString();
+                      title = (doc['title'] ?? doc['name'] ?? '옷 이름').toString();
+                      link = (doc['link'] ?? '').toString();
+                      id = (doc['_id'] ?? doc['id'] ?? 'api-$index').toString();
+                    }
+
+                    return Column(
+                      crossAxisAlignment: CrossAxisAlignment.stretch,
+                      children: [
+                        Padding(
+                          padding: const EdgeInsets.symmetric(horizontal: 8.0),
+                          child: Stack(
+                            children: [
+                              SizedBox(
+                                height: 120,
+                                width: double.infinity,
+                                child: ClipRRect(
+                                  borderRadius: BorderRadius.circular(10),
+                                  child: Image.network(
+                                    imageUrl,
+                                    fit: BoxFit.cover,
+                                    errorBuilder: (_, __, ___) => const Icon(Icons.image, size: 150),
                                   ),
                                 ),
-                                const SizedBox(height: 8),
-                                Row(
-                                  mainAxisAlignment: MainAxisAlignment.center,
-                                  children: [OutlinedButton(onPressed: _pingApi, style: pillStyle, child: const Text('API 핑'))],
+                              ),
+                              Positioned(
+                                right: 8,
+                                top: 8,
+                                child: Material(
+                                  color: Colors.white.withValues(alpha: 0.9),
+                                  shape: const CircleBorder(),
+                                  elevation: 2,
+                                  child: InkWell(
+                                    customBorder: const CircleBorder(),
+                                    onTap: () {
+                                      setState(() {
+                                        if (favoriteIds.contains(id)) {
+                                          favoriteIds.remove(id);
+                                        } else {
+                                          favoriteIds.add(id);
+                                        }
+                                      });
+                                    },
+                                    child: Padding(
+                                      padding: const EdgeInsets.all(6),
+                                      child: Icon(
+                                        favoriteIds.contains(id) ? Icons.star : Icons.star_border,
+                                        size: 18,
+                                        color: favoriteIds.contains(id)
+                                            ? Colors.yellow
+                                            : const Color(0xFF63C6D1),
+                                      ),
+                                    ),
+                                  ),
                                 ),
-                                const SizedBox(height: 12),
-                              ],
-                            ),
-                          ],
-                        ),
-                      )
-                    : Column(
-                        children: [
-                          const Divider(color: Color(0xFF63C6D1), thickness: 1, indent: 24, endIndent: 24),
-                          Padding(
-                            padding: const EdgeInsets.fromLTRB(32, 12, 12, 12),
-                            child: Align(
-                              alignment: Alignment.centerLeft,
-                              child: Text(category, style: const TextStyle(fontSize: 18, fontWeight: FontWeight.bold)),
-                            ),
+                              ),
+                            ],
                           ),
-                          Expanded(
-                            child: ScrollConfiguration(
-                              behavior: const _NoGlowScrollBehavior(),
-                              child: GridView.builder(
-                                physics: const ClampingScrollPhysics(),
-                                padding: const EdgeInsets.symmetric(horizontal: 12),
-                                gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
-                                  crossAxisCount: 2,
-                                  childAspectRatio: 0.75,
-                                  crossAxisSpacing: 12,
-                                  mainAxisSpacing: 12,
-                                ),
-                                itemCount: clothes.length,
-                                itemBuilder: (context, index) {
-                                  final doc = clothes[index];
-                                  String imageUrl = '';
-                                  String title = '';
-                                  String link = '';
-                                  String id = '';
-
-                                  if (doc is QueryDocumentSnapshot<Map<String, dynamic>>) {
-                                    final data = doc.data();
-                                    imageUrl = (data['image'] ?? '').toString();
-                                    title = (data['title'] ?? data['name'] ?? '옷 이름').toString();
-                                    link = (data['link'] ?? '').toString();
-                                    id = doc.id;
-                                  } else if (doc is Map<String, dynamic>) {
-                                    imageUrl = (doc['image'] ?? '').toString();
-                                    title = (doc['title'] ?? doc['name'] ?? '옷 이름').toString();
-                                    link = (doc['link'] ?? '').toString();
-                                    id = (doc['_id'] ?? doc['id'] ?? 'api-$index').toString();
-                                  }
-
-                                  return Column(
-                                    crossAxisAlignment: CrossAxisAlignment.stretch,
-                                    children: [
-                                      Padding(
-                                        padding: const EdgeInsets.symmetric(horizontal: 8.0),
-                                        child: Stack(
-                                          children: [
-                                            SizedBox(
-                                              height: 120,
-                                              width: double.infinity,
-                                              child: ClipRRect(
-                                                borderRadius: BorderRadius.circular(10),
-                                                child: Image.network(
-                                                  imageUrl,
-                                                  fit: BoxFit.cover,
-                                                  errorBuilder: (_, __, ___) => const Icon(Icons.image, size: 150),
-                                                ),
-                                              ),
-                                            ),
-                                            Positioned(
-                                              right: 8,
-                                              top: 8,
-                                              child: Material(
-                                                color: Colors.white.withValues(alpha: 0.9),
-                                                shape: const CircleBorder(),
-                                                elevation: 2,
-                                                child: InkWell(
-                                                  customBorder: const CircleBorder(),
-                                                  onTap: () {
-                                                    setState(() {
-                                                      if (favoriteIds.contains(id)) {
-                                                        favoriteIds.remove(id);
-                                                      } else {
-                                                        favoriteIds.add(id);
-                                                      }
-                                                    });
-                                                  },
-                                                  child: const Padding(
-                                                    padding: EdgeInsets.all(6),
-                                                    child: Icon(Icons.star_border, size: 18, color: Color(0xFF63C6D1)),
-                                                  ),
-                                                ),
-                                              ),
-                                            ),
-                                          ],
-                                        ),
-                                      ),
-                                      const SizedBox(height: 8),
-                                      Padding(
-                                        padding: const EdgeInsets.symmetric(horizontal: 10.0),
-                                        child: InkWell(
-                                          onTap: () => _launchURL(link),
-                                          child: Text(
-                                            title,
-                                            maxLines: 2,
-                                            overflow: TextOverflow.ellipsis,
-                                            textAlign: TextAlign.center,
-                                            style: const TextStyle(
-                                              fontWeight: FontWeight.w600,
-                                              decoration: TextDecoration.underline,
-                                              fontSize: 13,
-                                              height: 1.3,
-                                            ),
-                                          ),
-                                        ),
-                                      ),
-                                    ],
-                                  );
-                                },
+                        ),
+                        const SizedBox(height: 8),
+                        Padding(
+                          padding: const EdgeInsets.symmetric(horizontal: 10.0),
+                          child: InkWell(
+                            onTap: () => _launchURL(link),
+                            child: Text(
+                              title,
+                              maxLines: 2,
+                              overflow: TextOverflow.ellipsis,
+                              textAlign: TextAlign.center,
+                              style: const TextStyle(
+                                fontWeight: FontWeight.w600,
+                                decoration: TextDecoration.underline,
+                                fontSize: 13,
+                                height: 1.3,
                               ),
                             ),
                           ),
-                          Padding(
-                            padding: const EdgeInsets.only(left: 16, right: 16, bottom: 20, top: 8),
-                            child: Row(
-                              mainAxisAlignment: MainAxisAlignment.center,
-                              children: [
-                                OutlinedButton(
-                                  onPressed: favoriteIds.isNotEmpty ? _saveFavorites : null,
-                                  style: pillStyle,
-                                  child: const Text('즐겨찾기 저장'),
-                                ),
-                                const SizedBox(width: 12),
-                                if (_hasMore)
-                                  OutlinedButton(
-                                    onPressed: _isLoadingMore ? null : _loadMore,
-                                    style: pillStyle,
-                                    child: _isLoadingMore
-                                        ? const SizedBox(
-                                            height: 18,
-                                            width: 18,
-                                            child: CircularProgressIndicator(strokeWidth: 2),
-                                          )
-                                        : const Text('추천 더보기'),
-                                  ),
-                              ],
-                            ),
-                          ),
-                        ],
-                      ),
+                        ),
+                      ],
+                    );
+                  },
+                ),
+              ),
+            ),
+            Padding(
+              padding: const EdgeInsets.only(left: 16, right: 16, bottom: 20, top: 8),
+              child: Row(
+                mainAxisAlignment: MainAxisAlignment.center,
+                children: [
+                  OutlinedButton(
+                    onPressed: favoriteIds.isNotEmpty ? _saveFavorites : null,
+                    style: pillStyle,
+                    child: const Text('즐겨찾기 저장'),
+                  ),
+                  const SizedBox(width: 12),
+                  if (_hasMore)
+                    OutlinedButton(
+                      onPressed: _isLoadingMore ? null : _loadMore,
+                      style: pillStyle,
+                      child: _isLoadingMore
+                          ? const SizedBox(
+                        height: 18,
+                        width: 18,
+                        child: CircularProgressIndicator(strokeWidth: 2),
+                      )
+                          : const Text('추천 더보기'),
+                    ),
+                ],
+              ),
+            ),
+          ],
+        ),
       ),
     );
   }
