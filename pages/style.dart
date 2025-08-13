@@ -1,6 +1,7 @@
+// lib/pages/style_page.dart
 import 'package:flutter/material.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
-import '../utils/user_handle.dart'; // 추가
+import '../utils/user_handle.dart';
 
 class StylePage extends StatefulWidget {
   const StylePage({super.key});
@@ -65,14 +66,14 @@ class _StylePageState extends State<StylePage> {
   Future<void> _prefillStyleFromFirestore() async {
     setState(() => _loadingPrefill = true);
     try {
-      final doc = await userDocByHandle();
-      final snap = await doc.get();
+      final docRef = userDocRef(); // ✅ handle 기반 참조
+      final snap = await docRef.get();
       final data = snap.data();
       if (data == null) return;
 
       final s = data['style'] as String?;
-      if (s != null && mounted) {
-        setState(() => selectedStyle = s);
+      if (s != null && (styles.contains(s))) {
+        if (mounted) setState(() => selectedStyle = s);
       }
     } catch (_) {
       // 필요 시 오류 처리
@@ -86,9 +87,8 @@ class _StylePageState extends State<StylePage> {
 
     setState(() => _saving = true);
     try {
-      final doc = await userDocByHandle();
-      // style 병합 저장 (users/{handle})
-      await doc.set({
+      // ✅ users/{handle}에 병합 저장
+      await userDocRef().set({
         'style': selectedStyle,
         'updatedAt': FieldValue.serverTimestamp(),
       }, SetOptions(merge: true));
