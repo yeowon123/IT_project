@@ -71,10 +71,10 @@
   </tr>
   <tr>
     <td style="width: 50%; border: 1px solid #ccc;">
-      <img src="image/select_result.png" style="max-width:95%;"><br>
+      <img src="image/선택 결과 확인.png" style="max-width:95%;"><br>
     </td>
     <td style="width: 50%; border: 1px solid #ccc;">
-      <img src="image/multiple_clothes_recommend.png" style="max-width:95%;"><br>
+      <img src="image/다양한 옷 추천.png" style="max-width:95%;"><br>
     </td>
   </tr>
   <tr>
@@ -87,10 +87,10 @@
   </tr>
   <tr>
     <td style="width: 50%; border: 1px solid #ccc;">
-      <img src="image/save_favorites.png" style="max-width:95%;"><br>
+      <img src="image/즐겨찾기 저장.png" style="max-width:95%;"><br>
     </td>
     <td style="width: 50%; border: 1px solid #ccc;">
-      <img src="image/mypage_favorites_check.png" style="max-width:95%;"><br>
+      <img src="image/마이페이지에서 즐겨찾기 확인 가능.png" style="max-width:95%;"><br>
     </td>
   </tr>
   <tr>
@@ -103,10 +103,10 @@
   </tr>
   <tr>
     <td style="width: 50%; border: 1px solid #ccc;">
-      <img src="image/top_bottom_dress_select.png" style="max-width:95%;"><br>
+      <img src="image/상의 하의 원피스 선택.png" style="max-width:95%;"><br>
     </td>
     <td style="width: 50%; border: 1px solid #ccc;">
-      <img src="image/favorites_based_recommend.png" style="max-width:95%;"><br>
+      <img src="image/추천.png" style="max-width:95%;"><br>
     </td>
   </tr>
   <tr>
