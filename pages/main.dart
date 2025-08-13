@@ -1,25 +1,30 @@
 import 'package:flutter/material.dart';
 import 'package:firebase_core/firebase_core.dart';
-import 'package:firebase_auth/firebase_auth.dart'; // ★ 변경: 최소 로그인 보장을 위해 추가
+import 'package:firebase_auth/firebase_auth.dart';
+import 'package:tt/user_handle.dart';
 import 'firebase_options.dart';
-import 'pages/style_page.dart';
-import 'pages/choice_page.dart';
-import 'pages/question_page.dart';
-import 'pages/recommendation_page.dart';
-import 'pages/stylist_page.dart';
-import 'pages/login_page.dart';
-import 'utils/user_handle.dart'; // ★ 변경: ensureUserHandle 사용
+
+// 페이지 import
+import 'pages/style.dart';
+import 'pages/choice.dart';
+import 'pages/question.dart'; // QuestionPage 정의
+import 'pages/recommendation.dart';
+import 'pages/favorite.dart'; // StylistPage 정의
+import 'pages/login.dart';
+import 'pages/mypage.dart';
+import 'pages/profile.dart';
+import 'utils/user_handle.dart';
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
   await Firebase.initializeApp(options: DefaultFirebaseOptions.currentPlatform);
 
-  // ★ 변경: 앱 시작 시 익명 로그인 보장(디바이스에서 로그인 전 진입 방지)
+  // 익명 로그인
   if (FirebaseAuth.instance.currentUser == null) {
     await FirebaseAuth.instance.signInAnonymously();
   }
 
-  // ★ 변경: 사용자 핸들/루트문서 준비(즐겨찾기 컬렉션 참조가 null 되는 문제 방지)
+  // 사용자 핸들 초기화
   await ensureUserHandle();
 
   runApp(const MyApp());
@@ -33,12 +38,6 @@ class MyApp extends StatelessWidget {
     return MaterialApp(
       title: 'Fashion Recommender',
       debugShowCheckedModeBanner: false,
-      builder: (context, child) {
-        return ScrollConfiguration(
-          behavior: const _NoGlowScrollBehavior(),
-          child: child!,
-        );
-      },
       theme: ThemeData(
         useMaterial3: true,
         primarySwatch: Colors.teal,
@@ -53,24 +52,38 @@ class MyApp extends StatelessWidget {
       initialRoute: '/',
       routes: {
         '/': (context) => const LoginPage(),
+
+        // 질문 페이지 (arguments 방식)
         '/question': (context) => const QuestionPage(),
+
         '/choice': (context) => const ChoicePage(),
         '/recommendation': (context) => const RecommendationPage(),
         '/style': (context) => const StylePage(),
-        '/stylist': (context) => const StylistPage(),
+
+        // 마이페이지
+        '/mypage': (context) => const MyPage(
+          email: 'test@test.com',
+          season: '여름',
+          situation: '데이트',
+        ),
+
+        // 프로필 화면
+        '/profile': (context) {
+          final args =
+          ModalRoute.of(context)!.settings.arguments as Map<String, dynamic>?;
+          return ProfileScreen(
+            email: args?['email'] ?? '',
+            season: args?['season'] ?? '',
+            situation: args?['situation'] ?? '',
+            style: args?['style'] ?? '',
+          );
+        },
+
+        // 즐겨찾기 & 스타일리스트 페이지
+        '/favorite': (context) => const FavoritePage(),
+        '/favorites': (context) => const FavoritePage(),
+        '/stylist': (context) => const FavoritePage(),
       },
     );
-  }
-}
-
-class _NoGlowScrollBehavior extends ScrollBehavior {
-  const _NoGlowScrollBehavior();
-  @override
-  Widget buildOverscrollIndicator(
-    BuildContext context,
-    Widget child,
-    ScrollableDetails details,
-  ) {
-    return child;
   }
 }
