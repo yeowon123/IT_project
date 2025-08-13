@@ -17,14 +17,19 @@ class RecommendationPage extends StatefulWidget {
 }
 
 class _RecommendationPageState extends State<RecommendationPage> {
+  // ====== 에뮬레이터 개발용: 스마트스토어면 바로 msearch로 열기 ======
+  // 필요 없으면 false로 바꾸면 됩니다.
   static const bool kAltForSmartstoreInEmulator = true;
+
+  // ====== API 설정 ======
   static const String _apiKey = "twenty-clothes-api-key";
   static const Duration apiTimeout = Duration(seconds: 60);
   static const Duration pingTimeout = Duration(seconds: 20);
 
   late final String _apiUrl = "${_apiBase()}/recommend";
 
-  String _apiBase() { 
+  String _apiBase() {
+    // flutter run --dart-define=API_BASE=http://172.30.1.2:8000 로 덮어쓰기 가능
     const fromDefine = String.fromEnvironment('API_BASE');
     if (fromDefine.isNotEmpty) return fromDefine;
 
@@ -39,7 +44,7 @@ class _RecommendationPageState extends State<RecommendationPage> {
     }
   }
 
-  
+  /// Firestore 문서 또는 서버에서 온 Map을 함께 담기 위해 dynamic 사용
   List<dynamic> clothes = [];
   int page = 0;
   static const int itemsPerPage = 8;
@@ -54,7 +59,7 @@ class _RecommendationPageState extends State<RecommendationPage> {
 
   Set<String> favoriteIds = {};
 
-
+  // 디버그 로그
   final StringBuffer _log = StringBuffer();
   void _addLog(String msg) {
     debugPrint(msg);
@@ -76,7 +81,7 @@ class _RecommendationPageState extends State<RecommendationPage> {
     }
   }
 
-  
+  // ===== 한국어 → 서버 enum(영어) 변환 =====
   String _toApiStyle(String s) {
     final base = s.split('/').first.trim();
     const map = {
@@ -122,7 +127,7 @@ class _RecommendationPageState extends State<RecommendationPage> {
     return map[s] ?? s.toLowerCase();
   }
 
- 
+  // ===== API 결과 파싱 (문자열 배열/객체 배열 모두 지원) =====
   Future<Map<String, dynamic>> _fetchFromApi() async {
     final url = Uri.parse(_apiUrl);
     final email = FirebaseAuth.instance.currentUser?.email ?? "guest@local";
@@ -200,7 +205,7 @@ class _RecommendationPageState extends State<RecommendationPage> {
     }
   }
 
-  
+  // ===== Firestore 서브컬렉션명 =====
   String _subCollectionOf(String category) {
     switch (category) {
       case '상의':
@@ -211,13 +216,13 @@ class _RecommendationPageState extends State<RecommendationPage> {
       case '세트':
         return 'setup';
       case '원피스':
-        return 'onepiece'; 
+        return 'onepiece'; // 프로젝트에 있으면 사용
       default:
         return '';
     }
   }
 
-  
+  // ===== Firestore 조회 (name/title whereIn, 10개 청크) =====
   Future<List<QueryDocumentSnapshot<Map<String, dynamic>>>> _queryByNamesBoth(
     String subCollection,
     List<String> names,
@@ -268,7 +273,7 @@ class _RecommendationPageState extends State<RecommendationPage> {
     return snap.docs;
   }
 
-  
+  // ===== 메인 로더 =====
   Future<void> fetchClothes() async {
     setState(() {
       isLoading = true;
@@ -282,6 +287,7 @@ class _RecommendationPageState extends State<RecommendationPage> {
       final sub = _subCollectionOf(category);
       _addLog("[FS] 카테고리='$category' → sub='$sub'");
 
+      // 1) 서버가 객체 배열을 주면 그대로 표시
       final serverItems = (api["items"] is List)
           ? List<Map<String, dynamic>>.from(api["items"])
           : <Map<String, dynamic>>[];
@@ -298,6 +304,7 @@ class _RecommendationPageState extends State<RecommendationPage> {
         return;
       }
 
+      // 2) 문자열 이름 배열이면 파베 매칭
       final names = (api["names"] is List)
           ? List<String>.from(api["names"])
           : <String>[];
@@ -334,7 +341,7 @@ class _RecommendationPageState extends State<RecommendationPage> {
         _addLog("[UI] 서버 추천이 비었거나 sub 비어 있음 → Fallback 시도");
       }
 
-   
+      // 3) Fallback
       if (sub.isNotEmpty) {
         final fallbacks = await _fallbackFromFS(sub);
         if (!mounted) return;
@@ -361,13 +368,13 @@ class _RecommendationPageState extends State<RecommendationPage> {
     }
   }
 
- 
+  // ===== URL 열기 보조 =====
   String _normalizeUrl(String url) {
     // 1) 보이지 않는 문자 제거 + 공백 정리
     var s = url.replaceAll(RegExp(r'[\u200B-\u200D\uFEFF]'), '').trim();
     if (s.isEmpty) return s;
 
-
+    // 2) 프로토콜 보정
     if (s.startsWith('//')) s = 'https:$s';
     if (!s.startsWith('http://') && !s.startsWith('https://')) s = 'https://$s';
 
@@ -378,7 +385,7 @@ class _RecommendationPageState extends State<RecommendationPage> {
       return s;
     }
 
- 
+    // 3) shopping.naver.com (dooropen/outlink) → 실제 URL 복원
     if (uri.host.contains('shopping.naver.com')) {
       final door = uri.queryParameters['url'] ?? uri.queryParameters['u'];
       if (door != null && door.isNotEmpty) {
@@ -390,11 +397,12 @@ class _RecommendationPageState extends State<RecommendationPage> {
       }
     }
 
-
+    // 4) http → https
     if (uri.scheme == 'http') {
       uri = uri.replace(scheme: 'https');
     }
 
+    // 5) 스마트스토어: 모바일 정규형으로 고정 (쿼리/해시 제거)
     if (uri.host.endsWith('smartstore.naver.com')) {
       // 경로에서 products/{id} 추출
       final m = RegExp(r'/products/(\d+)').firstMatch(uri.path);
@@ -415,6 +423,7 @@ class _RecommendationPageState extends State<RecommendationPage> {
         return 'https://m.smartstore.naver.com/products/$pid';
       }
 
+      // 그래도 못 찾으면 모바일 도메인만 유지
       return Uri(
         scheme: 'https',
         host: 'm.smartstore.naver.com',
@@ -422,11 +431,13 @@ class _RecommendationPageState extends State<RecommendationPage> {
       ).toString();
     }
 
+    // 6) 기타: 트래킹 파라미터 제거 및 뒤에 '?' 방지
     final cleaned = uri.replace(queryParameters: {});
     final out = cleaned.toString();
     return out.endsWith('?') ? out.substring(0, out.length - 1) : out;
   }
 
+  // ====== (추가) 헬퍼 ======
   bool _isSmartstore(String u) =>
       Uri.tryParse(u)?.host.endsWith('smartstore.naver.com') ?? false;
 
@@ -439,13 +450,14 @@ class _RecommendationPageState extends State<RecommendationPage> {
     return m2?.group(2);
   }
 
+  // 차단 페이지 간단 감지
   Future<bool> _blockedByNaver(Uri u) async {
     try {
       final r = await http.get(u).timeout(const Duration(seconds: 3));
       final t = r.body;
       return t.contains('접속이 일시적으로 제한') || t.contains('현재 서비스 접속이 불가합니다');
     } catch (_) {
-      return false; 
+      return false; // 네트워크 에러면 기본 링크 시도
     }
   }
 
@@ -456,6 +468,8 @@ class _RecommendationPageState extends State<RecommendationPage> {
       return false;
     }
   }
+
+  // ====== 스마트스토어 막히면 msearch로 대체 ======
   Future<void> _launchURL(String raw) async {
     debugPrint('RAW URL >>> $raw');
     final normalized = _normalizeUrl(raw);
@@ -504,6 +518,7 @@ class _RecommendationPageState extends State<RecommendationPage> {
     }
   }
 
+  // 즐겨찾기 수집
   List<Map<String, dynamic>> _collectFavoriteItems() {
     final List<Map<String, dynamic>> result = [];
     for (int i = 0; i < clothes.length; i++) {
@@ -575,6 +590,7 @@ class _RecommendationPageState extends State<RecommendationPage> {
     }
   }
 
+  // API 핑(연결 확인)
   Future<void> _pingApi() async {
     final docsUrl = Uri.parse("${_apiBase()}/docs");
     final specUrl = Uri.parse("${_apiBase()}/openapi.json");
@@ -770,6 +786,7 @@ class _RecommendationPageState extends State<RecommendationPage> {
                                 .toString();
                           }
 
+                          // ====== 여기부터 UI 변경 ======
                           return Column(
                             crossAxisAlignment: CrossAxisAlignment.stretch,
                             children: [
@@ -831,6 +848,7 @@ class _RecommendationPageState extends State<RecommendationPage> {
                                 ),
                               ),
                               const SizedBox(height: 8),
+                              // 상품명: 2줄, 가운데 정렬, … 처리
                               Padding(
                                 padding: const EdgeInsets.symmetric(
                                   horizontal: 10.0,
@@ -853,7 +871,7 @@ class _RecommendationPageState extends State<RecommendationPage> {
                               ),
                             ],
                           );
-                          
+                          // ====== UI 변경 끝 ======
                         },
                       ),
                     ),
@@ -902,6 +920,7 @@ class _RecommendationPageState extends State<RecommendationPage> {
   }
 }
 
+// 오버스크롤 글로우/스트레치 제거용
 class _NoGlowScrollBehavior extends ScrollBehavior {
   const _NoGlowScrollBehavior();
 
