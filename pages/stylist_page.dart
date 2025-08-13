@@ -86,8 +86,11 @@ class _StylistPageState extends State<StylistPage> {
     }
 
     final cleaned = uri.replace(queryParameters: {});
-    final out = cleaned.toString();
-    return out.endsWith('?') ? out.substring(0, out.length - 1) : out;
+    if (cleaned.toString().endsWith('?')) {
+      final s2 = cleaned.toString();
+      return s2.substring(0, s2.length - 1);
+    }
+    return cleaned.toString();
   }
 
   bool _isSmartstore(String u) =>
@@ -360,7 +363,6 @@ class _StylistPageState extends State<StylistPage> {
                                 maxLines: 1,
                               ),
                             ),
-                            // 링크 텍스트는 제거했습니다.
                           ],
                         ),
                       ),
