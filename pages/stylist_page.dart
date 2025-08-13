@@ -2,7 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:url_launcher/url_launcher.dart';
 import 'package:http/http.dart' as http;
-import '../utils/user_handle.dart'; // favoritesCol()
+import '../utils/user_handle.dart';
 
 class StylistPage extends StatefulWidget {
   const StylistPage({Key? key}) : super(key: key);
@@ -12,7 +12,6 @@ class StylistPage extends StatefulWidget {
 }
 
 class _StylistPageState extends State<StylistPage> {
-  // RecommendationPage와 동일한 동작을 위해 유지
   static const bool kAltForSmartstoreInEmulator = true;
 
   String? selectedTopDocId;
@@ -30,7 +29,6 @@ class _StylistPageState extends State<StylistPage> {
     });
   }
 
-  // ===== URL 열기 (RecommendationPage와 동일 동작) =====
   String _normalizeUrl(String url) {
     var s = url.replaceAll(RegExp(r'[\u200B-\u200D\uFEFF]'), '').trim();
     if (s.isEmpty) return s;
@@ -143,7 +141,6 @@ class _StylistPageState extends State<StylistPage> {
       return;
     }
 
-    // 스마트스토어 대안 경로 (에뮬레이터/차단 시)
     if (_isSmartstore(normalized)) {
       final pid = _extractSmartstorePid(normalized);
       if (pid != null) {
@@ -169,11 +166,17 @@ class _StylistPageState extends State<StylistPage> {
       );
     }
   }
-  // ===== URL 열기 끝 =====
 
-  // ✅ 인덱스 없이: orderBy 제거 (카테고리로만 필터) → 클라이언트 정렬
   Stream<QuerySnapshot<Map<String, dynamic>>> _favStream(String categoryKr) {
-    return favoritesCol().where('category', isEqualTo: categoryKr).snapshots();
+    final col = favoritesColOrNull(); // ★ 변경: 컬렉션 준비 전이면 null일 수 있어 가드
+    if (col == null) {
+      return Stream<
+        QuerySnapshot<Map<String, dynamic>>
+      >.empty(); // ★ 변경: 빈 스트림 반환
+    }
+    return col
+        .where('category', isEqualTo: categoryKr)
+        .snapshots(); // ★ 변경: null 안전
   }
 
   Map<String, dynamic> _toItemMap(DocumentSnapshot<Map<String, dynamic>> doc) {
@@ -219,7 +222,6 @@ class _StylistPageState extends State<StylistPage> {
           );
         }
 
-        // 최신순 정렬 (클라이언트)
         final docs = (snap.data?.docs ?? []).toList();
         docs.sort((a, b) {
           final ta = (a.data()['savedAt'] as Timestamp?);
@@ -318,7 +320,6 @@ class _StylistPageState extends State<StylistPage> {
                         child: Column(
                           mainAxisAlignment: MainAxisAlignment.center,
                           children: [
-                            // 썸네일
                             Container(
                               width: 60,
                               height: 60,
@@ -349,7 +350,6 @@ class _StylistPageState extends State<StylistPage> {
                               ),
                             ),
                             const SizedBox(height: 12),
-                            // ✅ 상품명 클릭 → 링크 열기 (링크 텍스트는 표시하지 않음)
                             InkWell(
                               onTap: () => _launchURL(link),
                               child: Text(
